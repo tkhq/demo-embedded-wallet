@@ -5,6 +5,7 @@ import { useTransactions } from "@/providers/transactions-provider"
 import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
 import {
+  AlertCircle,
   ArrowDown,
   ArrowUp,
   ChevronDown,
@@ -32,6 +33,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import SendTransaction from "./send-transaction"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import {
   Drawer,
   DrawerClose,
@@ -119,11 +121,6 @@ export default function TransferDialog() {
       setIsValid(valid)
     }
   }, [ethAmount, recipientAddress, selectedAccount])
-
-  const handleSelect = (action: TransferAction) => {
-    setSelectedAction(action)
-    setIsOpen(true)
-  }
 
   const handlePreviewSendTransaction = async () => {
     if (!selectedAccount || !walletClient) return
@@ -249,7 +246,7 @@ export default function TransferDialog() {
           </div>
           <div className="flex-grow">
             <div className="font-semibold">Send</div>
-            <div className="text-sm ">Ethereum</div>
+            <div className="text-sm ">Ethereum (Sepolia)</div>
           </div>
           <div className="text-right">
             <div className="font-semibold">
@@ -290,7 +287,7 @@ export default function TransferDialog() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Receive ETH</h2>
-          <p className="text-[#8e8e93]">on Ethereum Network</p>
+          <p className="text-[#8e8e93]">on Ethereum Sepolia Network</p>
         </div>
         <Button variant="ghost" className="text-white">
           <ChevronDown className="mr-2" size={20} />
@@ -315,6 +312,13 @@ export default function TransferDialog() {
           </Button>
         </div>
       </div>
+      <Alert className="p-3 pb-2 ">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="text-xs text-muted-foreground">
+          This address can only receive testnet Ethereum (Sepolia). Don't send
+          any other assets or they may be lost.
+        </AlertDescription>
+      </Alert>
     </div>
   )
 

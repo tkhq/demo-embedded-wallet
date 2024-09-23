@@ -55,12 +55,10 @@ export function Passkeys() {
     }
   }
 
-  const editAuthenticator = async (authenticatorId: string) => {}
-
   return (
     <div className="w-full">
       <div className="mb-2 flex items-center gap-4">
-        <h3 className="text-lg font-semibold">Passkeys</h3>
+        <h3 className="font-semibold sm:text-lg">Passkeys</h3>
         <AddPasskey onPasskeyAdded={onPasskeyAdded} />
       </div>
       <div>
@@ -75,7 +73,6 @@ export function Passkeys() {
                 createdAt={
                   new Date(parseInt(authenticator.createdAt.seconds) * 1000)
                 }
-                onEdit={() => editAuthenticator(authenticator.authenticatorId)}
                 onRemove={() =>
                   removeAuthenticator(authenticator.authenticatorId)
                 }

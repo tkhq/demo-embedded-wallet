@@ -10,9 +10,14 @@ import {
   oauth,
 } from "@/actions/turnkey"
 import { googleLogout } from "@react-oauth/google"
+import {
+  getStorageValue,
+  setStorageValue,
+  StorageKeys,
+} from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 
-import { Email, User } from "@/types/turnkey"
+import { Email, ReadOnlySession, User } from "@/types/turnkey"
 
 export const loginResponseToUser = (loginResponse: {
   organizationId: string
@@ -27,16 +32,19 @@ export const loginResponseToUser = (loginResponse: {
     organizationName: loginResponse.organizationName,
   }
 
-  const readOnlySession = {
-    session: loginResponse.session || "",
-    sessionExpiry: Number(loginResponse.sessionExpiry) || 0,
+  let readOnlySession: ReadOnlySession | undefined
+  if (loginResponse.session) {
+    readOnlySession = {
+      session: loginResponse.session,
+      sessionExpiry: Number(loginResponse.sessionExpiry),
+    }
   }
 
   return {
     userId: loginResponse.userId,
     username: loginResponse.username,
     organization: subOrganization,
-    readOnlySession: readOnlySession,
+    readOnlySession,
   }
 }
 
@@ -148,6 +156,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               authIframeClient.iframePublicKey
             )
           if (loginResponse?.organizationId) {
+            // Save the user in localStorage
+            await setStorageValue(
+              StorageKeys.CurrentUser,
+              loginResponseToUser(loginResponse)
+            )
+
             dispatch({
               type: "COMPLETE_EMAIL_AUTH",
               payload: loginResponseToUser(loginResponse),

@@ -247,7 +247,7 @@ export default function ExportWalletDialog({
               className="w-full"
             >
               {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? "Exporting..." : injectResponse ? "Done" : "Export"}
+              {injectResponse ? "Done" : "Export"}
             </Button>
           </div>
         </DialogFooter>

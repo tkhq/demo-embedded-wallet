@@ -83,7 +83,12 @@ export default function Activity() {
                 transactions.map((transaction) => (
                   <TableRow key={transaction.hash}>
                     <TableCell>
-                      <div className="flex items-center gap-2 capitalize">
+                      <Link
+                        href={`https://sepolia.etherscan.io/tx/${transaction.hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 capitalize"
+                      >
                         {transaction.status === "received" ? (
                           <ArrowDownIcon className="h-4 w-4 text-green-500" />
                         ) : transaction.status === "pending" ? (
@@ -92,7 +97,7 @@ export default function Activity() {
                           <ArrowUpIcon className="h-4 w-4 text-red-500" />
                         )}
                         {transaction.status}
-                      </div>
+                      </Link>
                     </TableCell>
                     <TableCell className="hidden p-1 text-xs sm:table-cell md:p-4 md:text-sm">
                       {new Date(transaction.timestamp).toLocaleString("en-US", {

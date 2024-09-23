@@ -35,54 +35,41 @@ export default function Settings() {
   }, [state.wallets, preferredWalletSetting])
 
   return (
-    <main className="flex items-center justify-center px-36 py-12">
-      <div className="mx-auto grid w-full max-w-6xl gap-2">
+    <main className="flex items-center justify-center px-8 py-4 lg:px-36 lg:py-12">
+      <div className="mx-auto w-full max-w-6xl space-y-2">
         <div className="flex items-center gap-2">
           <Button
-            className="-mb-0.5"
+            className="-mb-0.5 w-min sm:w-auto"
             variant="ghost"
             size="icon"
             onClick={() => router.push("/dashboard")}
           >
             <ArrowLeft strokeWidth={2.5} className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-semibold">Settings</h1>
+          <h1 className="text-xl font-semibold sm:text-3xl">Settings</h1>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Login methods</CardTitle>
+            <CardTitle className="text-lg font-semibold sm:text-2xl">
+              Login methods
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="mb-2 text-lg font-semibold">Email</h3>
-              <Card className="flex items-center justify-between rounded-md bg-card p-3">
+              <h3 className="mb-2 font-semibold sm:text-lg">Email</h3>
+              <Card className="flex items-center gap-2 rounded-md bg-card p-3 sm:justify-between sm:gap-0">
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <span>Email</span>
+                  <Mail className="h-4 w-4 text-muted-foreground sm:h-5 sm:w-5" />
+                  <span className="hidden sm:block">Email</span>
                 </div>
-                <span className="text-muted-foreground">{user?.email}</span>
+                <span className=" text-xs text-muted-foreground sm:text-base">
+                  {user?.email}
+                </span>
               </Card>
             </div>
             <Passkeys />
           </CardContent>
         </Card>
-        {/* <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Wallets</CardTitle>
-            <CardDescription>Manage your wallets.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="mb-2 text-lg font-semibold">Default wallet</h3>
-              <Card className="flex w-max items-center justify-between rounded-md bg-card p-3">
-                <div className="flex items-center space-x-3">
-                  <WalletIcon className="h-5 w-5 text-muted-foreground" />
-                  <span>{preferredWallet?.walletName}</span>
-                </div>
-              </Card>
-            </div>
-          </CardContent>
-        </Card> */}
       </div>
     </main>
   )
