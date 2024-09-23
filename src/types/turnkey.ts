@@ -20,6 +20,10 @@ export type Wallet =
 
 export type User = Awaited<ReturnType<Turnkey["getCurrentUser"]>> & {
   email?: Email
+  readOnlySession?: {
+    session: string
+    sessionExpiry: number
+  }
 }
 
 export type Authenticator =
