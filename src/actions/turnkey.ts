@@ -139,7 +139,15 @@ export const initEmailAuth = async ({
   email: Email
   targetPublicKey: string
 }) => {
-  const organizationId = await getSubOrgIdByEmail(email as Email)
+  let organizationId = await getSubOrgIdByEmail(email as Email)
+
+  if (!organizationId) {
+    const { subOrg } = await createUserSubOrg({
+      email: email as Email,
+    })
+    organizationId = subOrg.subOrganizationId
+  }
+
   const magicLinkTemplate = getMagicLinkTemplate("auth", email, "email")
 
   if (organizationId?.length) {

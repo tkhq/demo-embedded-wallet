@@ -23,7 +23,7 @@ export const siteConfig: SiteConfig = {
     "shadcn/ui",
   ],
   url: {
-    base: `https://${baseUrl}` || "http://localhost:3000",
+    base: baseUrl ? `https://${baseUrl}` : "http://localhost:3000",
     author: "https://turnkey.io",
   },
   links: {
