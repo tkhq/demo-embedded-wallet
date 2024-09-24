@@ -42,14 +42,13 @@ function EmailAuthContent() {
               </div>
             ) : (
               <div className="flex items-center gap-2 text-lg font-medium">
-                Magic link sent <Send className="h-5 w-5" />
+                Confirm your email
               </div>
             )}
           </CardTitle>
           {!credentialBundle && (
             <CardDescription className="text-center">
-              A confirmation link has been sent to your email. Click the link to
-              sign in.
+              Click the link in your email to sign in.
             </CardDescription>
           )}
         </CardHeader>
