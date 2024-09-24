@@ -126,8 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (response) {
         dispatch({ type: "INIT_EMAIL_AUTH" })
-        router.push(`/email-auth?userEmail=${email}`)
-        // Email sent successfully
+        router.push(`/email-auth?userEmail=${encodeURIComponent(email)}`)
       }
     } catch (error: any) {
       dispatch({ type: "ERROR", payload: error.message })

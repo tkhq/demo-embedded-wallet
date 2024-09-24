@@ -48,7 +48,8 @@ function EmailAuthContent() {
           </CardTitle>
           {!credentialBundle && (
             <CardDescription className="text-center">
-              Click the link in your email to sign in.
+              Click the link sent to{" "}
+              <span className="font-bold">{userEmail}</span> to sign in.
             </CardDescription>
           )}
         </CardHeader>

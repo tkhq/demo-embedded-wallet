@@ -2,15 +2,10 @@ import "@/styles/globals.css"
 
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
-import Image from "next/image"
 import { Providers } from "@/providers"
 
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
-import Features from "@/components/features"
-import { ModeToggle } from "@/components/mode-toggle"
-
-import gradient from "../../public/purple-gradient.png"
 
 const inter = Inter({ subsets: ["latin"] })
 
