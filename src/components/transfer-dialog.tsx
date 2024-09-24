@@ -54,7 +54,7 @@ export default function TransferDialog() {
   const { ethPrice } = useTokenPrice()
   const { getActiveClient } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isDesktop = useMediaQuery("(min-width: 564px)")
 
   // Controls the dialog open/close state
   const [isOpen, setIsOpen] = useState(false)
@@ -251,12 +251,12 @@ export default function TransferDialog() {
           {/* <ChevronRight className="ml-2 " size={20} /> */}
         </div>
 
-        <div className="flex items-center rounded-lg bg-muted  p-4">
+        <div className="flex items-center rounded-lg bg-muted p-2  sm:p-4">
           <Input
             placeholder="Enter recipient address"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            className="flex-grow border-none bg-transparent  placeholder-[#8e8e93] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className=" flex-grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
           />
         </div>
 
@@ -295,7 +295,12 @@ export default function TransferDialog() {
         <Label className="text-sm font-medium">Your address</Label>
         <div className="flex items-center justify-between rounded-lg">
           <div className="text-sm">
-            {truncateAddress(selectedAccount?.address || "")}
+            {isDesktop
+              ? selectedAccount?.address
+              : truncateAddress(selectedAccount?.address || "", {
+                  prefix: 10,
+                  suffix: 6,
+                })}
           </div>
           <Button variant="ghost" size="icon">
             <CopyIcon className="h-3 w-3" />
@@ -305,7 +310,7 @@ export default function TransferDialog() {
       <Alert className="p-3 pb-2 ">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription className="text-xs text-muted-foreground">
-          This address can only receive testnet Ethereum (Sepolia). Send any
+          This address can only receive testnet Ethereum (Sepolia). Sending any
           other asset to this address will result in loss of funds.
         </AlertDescription>
       </Alert>
