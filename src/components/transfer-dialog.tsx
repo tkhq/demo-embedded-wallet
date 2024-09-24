@@ -192,16 +192,6 @@ export default function TransferDialog() {
   }, [isOpen, currentView, selectedAction])
 
   const SendTab = () => {
-    const spanRef = useRef<HTMLSpanElement>(null)
-    const inputRef = useRef<HTMLInputElement>(null)
-
-    useEffect(() => {
-      if (spanRef.current && inputRef.current) {
-        const width = spanRef.current.offsetWidth + 14
-        inputRef.current.style.width = `${width}px`
-      }
-    }, [ethAmount])
-
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -315,8 +305,8 @@ export default function TransferDialog() {
       <Alert className="p-3 pb-2 ">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription className="text-xs text-muted-foreground">
-          This address can only receive testnet Ethereum (Sepolia). Don't send
-          any other assets or they may be lost.
+          This address can only receive testnet Ethereum (Sepolia). Send any
+          other asset to this address will result in loss of funds.
         </AlertDescription>
       </Alert>
     </div>
