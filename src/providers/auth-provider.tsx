@@ -10,33 +10,41 @@ import {
   oauth,
 } from "@/actions/turnkey"
 import { googleLogout } from "@react-oauth/google"
+import {
+  getStorageValue,
+  setStorageValue,
+  StorageKeys,
+} from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 
-import { Email, User } from "@/types/turnkey"
+import { Email, ReadOnlySession, User } from "@/types/turnkey"
 
 export const loginResponseToUser = (loginResponse: {
   organizationId: string
   organizationName: string
   userId: string
   username: string
-  session: string
-  sessionExpiry: string
+  session?: string
+  sessionExpiry?: string
 }): User => {
   const subOrganization = {
     organizationId: loginResponse.organizationId,
     organizationName: loginResponse.organizationName,
   }
 
-  const readOnlySession = {
-    session: loginResponse.session,
-    sessionExpiry: Number(loginResponse.sessionExpiry),
+  let readOnlySession: ReadOnlySession | undefined
+  if (loginResponse.session) {
+    readOnlySession = {
+      session: loginResponse.session,
+      sessionExpiry: Number(loginResponse.sessionExpiry),
+    }
   }
 
   return {
     userId: loginResponse.userId,
     username: loginResponse.username,
     organization: subOrganization,
-    readOnlySession: readOnlySession,
+    readOnlySession,
   }
 }
 
@@ -105,7 +113,8 @@ const AuthContext = createContext<{
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
-  const { turnkey, authIframeClient, passkeyClient } = useTurnkey()
+  const { turnkey, authIframeClient, passkeyClient, getActiveClient } =
+    useTurnkey()
 
   const initEmailLogin = async (email: Email) => {
     dispatch({ type: "LOADING", payload: true })
@@ -117,8 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (response) {
         dispatch({ type: "INIT_EMAIL_AUTH" })
-        router.push(`/email-auth?userEmail=${email}`)
-        // Email sent successfully
+        router.push(`/email-auth?userEmail=${encodeURIComponent(email)}`)
       }
     } catch (error: any) {
       dispatch({ type: "ERROR", payload: error.message })
@@ -141,15 +149,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         await authIframeClient?.injectCredentialBundle(credentialBundle)
+        if (authIframeClient?.iframePublicKey) {
+          const loginResponse =
+            await authIframeClient?.loginWithReadWriteSession(
+              authIframeClient.iframePublicKey
+            )
+          if (loginResponse?.organizationId) {
+            // Save the user in localStorage
+            await setStorageValue(
+              StorageKeys.CurrentUser,
+              loginResponseToUser(loginResponse)
+            )
 
-        const loginResponse = await authIframeClient?.login()
-
-        if (loginResponse?.organizationId) {
-          dispatch({
-            type: "COMPLETE_EMAIL_AUTH",
-            payload: loginResponseToUser(loginResponse),
-          })
-          router.push("/dashboard")
+            dispatch({
+              type: "COMPLETE_EMAIL_AUTH",
+              payload: loginResponseToUser(loginResponse),
+            })
+            router.push("/dashboard")
+          }
         }
       } catch (error: any) {
         dispatch({ type: "ERROR", payload: error.message })
@@ -162,28 +179,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithPasskey = async (email?: Email) => {
     dispatch({ type: "LOADING", payload: true })
     try {
-      let loginResponse
+      const subOrgId = await getSubOrgIdByEmail(email as Email)
 
-      if (email) {
-        // Determine if the user has a sub-organization associated with their email
-        const subOrgId = await getSubOrgIdByEmail(email as Email)
-
-        if (subOrgId?.length) {
-          loginResponse = await passkeyClient?.login()
+      if (subOrgId?.length) {
+        const loginResponse = await passkeyClient?.login()
+        if (loginResponse?.organizationId) {
+          dispatch({
+            type: "PASSKEY",
+            payload: loginResponseToUser(loginResponse),
+          })
+          router.push("/dashboard")
         }
-      } else {
-        // If no email is provided, assume the user already has an account
-        // Used for new sign ups when logging in for the first time
-        loginResponse = await passkeyClient?.login()
-      }
-
-      if (loginResponse?.organizationId) {
-        dispatch({
-          type: "PASSKEY",
-          payload: loginResponseToUser(loginResponse),
-        })
-
-        router.push("/dashboard")
       } else {
         // User either does not have an account with a sub organization
         // or does not have a passkey

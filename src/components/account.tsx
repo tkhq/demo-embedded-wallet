@@ -122,9 +122,9 @@ export default function Account() {
             )}
           </div>
           {isOpen ? (
-            <ChevronUpIcon className="h-4 w-4 text-muted-foreground" />
+            <ChevronUpIcon className="hidden h-4 w-4 text-muted-foreground sm:block" />
           ) : (
-            <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+            <ChevronDownIcon className="hidden h-4 w-4 text-muted-foreground sm:block" />
           )}
         </Button>
       </DropdownMenuTrigger>

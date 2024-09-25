@@ -5,6 +5,7 @@ import { useTransactions } from "@/providers/transactions-provider"
 import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
 import {
+  AlertCircle,
   ArrowDown,
   ArrowUp,
   ChevronDown,
@@ -32,6 +33,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import SendTransaction from "./send-transaction"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import {
   Drawer,
   DrawerClose,
@@ -52,7 +54,7 @@ export default function TransferDialog() {
   const { ethPrice } = useTokenPrice()
   const { getActiveClient } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isDesktop = useMediaQuery("(min-width: 564px)")
 
   // Controls the dialog open/close state
   const [isOpen, setIsOpen] = useState(false)
@@ -119,11 +121,6 @@ export default function TransferDialog() {
       setIsValid(valid)
     }
   }, [ethAmount, recipientAddress, selectedAccount])
-
-  const handleSelect = (action: TransferAction) => {
-    setSelectedAction(action)
-    setIsOpen(true)
-  }
 
   const handlePreviewSendTransaction = async () => {
     if (!selectedAccount || !walletClient) return
@@ -195,16 +192,6 @@ export default function TransferDialog() {
   }, [isOpen, currentView, selectedAction])
 
   const SendTab = () => {
-    const spanRef = useRef<HTMLSpanElement>(null)
-    const inputRef = useRef<HTMLInputElement>(null)
-
-    useEffect(() => {
-      if (spanRef.current && inputRef.current) {
-        const width = spanRef.current.offsetWidth + 14
-        inputRef.current.style.width = `${width}px`
-      }
-    }, [ethAmount])
-
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -249,7 +236,7 @@ export default function TransferDialog() {
           </div>
           <div className="flex-grow">
             <div className="font-semibold">Send</div>
-            <div className="text-sm ">Ethereum</div>
+            <div className="text-sm ">Ethereum (Sepolia)</div>
           </div>
           <div className="text-right">
             <div className="font-semibold">
@@ -264,12 +251,12 @@ export default function TransferDialog() {
           {/* <ChevronRight className="ml-2 " size={20} /> */}
         </div>
 
-        <div className="flex items-center rounded-lg bg-muted  p-4">
+        <div className="flex items-center rounded-lg bg-muted p-2  sm:p-4">
           <Input
             placeholder="Enter recipient address"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            className="flex-grow border-none bg-transparent  placeholder-[#8e8e93] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className=" flex-grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
           />
         </div>
 
@@ -290,7 +277,7 @@ export default function TransferDialog() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Receive ETH</h2>
-          <p className="text-[#8e8e93]">on Ethereum Network</p>
+          <p className="text-[#8e8e93]">on Ethereum Sepolia Network</p>
         </div>
         <Button variant="ghost" className="text-white">
           <ChevronDown className="mr-2" size={20} />
@@ -308,13 +295,25 @@ export default function TransferDialog() {
         <Label className="text-sm font-medium">Your address</Label>
         <div className="flex items-center justify-between rounded-lg">
           <div className="text-sm">
-            {truncateAddress(selectedAccount?.address || "")}
+            {isDesktop
+              ? selectedAccount?.address
+              : truncateAddress(selectedAccount?.address || "", {
+                  prefix: 10,
+                  suffix: 6,
+                })}
           </div>
           <Button variant="ghost" size="icon">
             <CopyIcon className="h-3 w-3" />
           </Button>
         </div>
       </div>
+      <Alert className="p-3 pb-2 ">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="text-xs text-muted-foreground">
+          This address can only receive testnet Ethereum (Sepolia). Sending any
+          other asset to this address will result in loss of funds.
+        </AlertDescription>
+      </Alert>
     </div>
   )
 

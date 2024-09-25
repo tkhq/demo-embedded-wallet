@@ -75,6 +75,7 @@ export default function ExportWalletDialog({
   }
 
   const exportWallet = async () => {
+    setError(null)
     // If we've already exported the wallet, close the dialog
     if (injectResponse) {
       setIsDialogOpen(false)
@@ -178,11 +179,11 @@ export default function ExportWalletDialog({
           </DialogTitle>
           <DialogDescription>
             {injectResponse
-              ? `Copy the ${
+              ? `Do not share your ${
                   selectedExportType === "seed-phrase"
                     ? "seed phrase"
                     : "private key"
-                } and import it into your wallet.`
+                } with anyone.`
               : "Select export type"}
           </DialogDescription>
         </DialogHeader>
@@ -247,7 +248,7 @@ export default function ExportWalletDialog({
               className="w-full"
             >
               {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? "Exporting..." : injectResponse ? "Done" : "Export"}
+              {injectResponse ? "Done" : "Export"}
             </Button>
           </div>
         </DialogFooter>

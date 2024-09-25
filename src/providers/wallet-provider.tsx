@@ -165,6 +165,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       }
       dispatch({ type: "SET_LOADING", payload: true })
       try {
+        // We'll try and get the current user's read-only session
         const browserClient = await turnkey?.currentUserSession()
         if (browserClient) {
           const wallets = await getWalletsWithAccounts(

@@ -84,7 +84,7 @@ export default function Auth() {
         <CardHeader className="space-y-4">
           <Icons.turnkey className="h-16 w-full stroke-0 py-2 dark:stroke-white" />
           <CardTitle className="text-center text-xl font-medium">
-            Login or Sign up
+            Log in or sign up
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -129,7 +129,7 @@ export default function Auth() {
                 }
                 loading={state.loading && loadingAction === "email"}
               >
-                Continue with Email
+                Continue with email
               </LoadingButton>
             </form>
           </Form>

@@ -2,9 +2,11 @@ import { SiteConfig } from "@/types"
 
 import { env } from "@/env.mjs"
 
-const baseUrl = env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
-  : "http://localhost:3000"
+const baseUrl =
+  (process.env.NEXT_PUBLIC_VERCEL_ENV === "production" &&
+    env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL) ||
+  (process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" &&
+    process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL)
 
 export const siteConfig: SiteConfig = {
   name: "Demo Embedded Wallet",
@@ -21,7 +23,7 @@ export const siteConfig: SiteConfig = {
     "shadcn/ui",
   ],
   url: {
-    base: baseUrl,
+    base: baseUrl ? `https://${baseUrl}` : "http://localhost:3000",
     author: "https://turnkey.io",
   },
   links: {

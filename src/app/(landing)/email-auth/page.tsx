@@ -30,26 +30,26 @@ function EmailAuthContent() {
   }, [authIframeClient])
 
   return (
-    <main className="flex flex-col items-center justify-center">
-      <Card className="mx-auto w-2/3 max-w-lg">
+    <main className="flex w-full flex-col items-center justify-center">
+      <Card className="mx-auto h-full w-full sm:w-1/2">
         <CardHeader className="space-y-4">
-          <Icons.turnkey className="h-14 w-full stroke-0 py-2 dark:stroke-white" />
+          <Icons.turnkey className="h-12 w-full stroke-0 py-2 dark:stroke-white sm:h-14" />
           <CardTitle className="flex  items-center justify-center text-center">
             {credentialBundle ? (
               <div className="flex items-center gap-2">
                 <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="animate-pulse">Authenticating...</span>
+                <span className="text-base">Authenticating...</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-lg font-medium">
-                Magic link sent <Send className="h-5 w-5" />
+                Confirm your email
               </div>
             )}
           </CardTitle>
           {!credentialBundle && (
             <CardDescription className="text-center">
-              A confirmation link has been sent to your email. Click the link to
-              sign in.
+              Click the link sent to{" "}
+              <span className="font-bold">{userEmail}</span> to sign in.
             </CardDescription>
           )}
         </CardHeader>

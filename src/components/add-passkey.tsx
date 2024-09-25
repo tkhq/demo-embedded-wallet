@@ -19,7 +19,7 @@ export default function AddPasskey({
 }: {
   onPasskeyAdded: (authenticatorId: string) => void
 }) {
-  const { turnkey, passkeyClient, getActiveClient } = useTurnkey()
+  const { passkeyClient, getActiveClient } = useTurnkey()
   const { user } = useUser()
   const [open, setOpen] = useState(false)
   const [passkeyName, setPasskeyName] = useState("")
@@ -66,7 +66,7 @@ export default function AddPasskey({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button className="text-xs sm:text-sm" variant="outline" size="sm">
           Add Passkey
         </Button>
       </DialogTrigger>
