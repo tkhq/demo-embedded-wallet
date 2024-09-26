@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useTransactions } from "@/providers/transactions-provider"
 import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
@@ -29,9 +29,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { RecipientAddressInput } from "./recipient-address"
 import SendTransaction from "./send-transaction"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import {
@@ -183,6 +183,7 @@ export default function TransferDialog() {
     setEthAmount("")
     setAmountUSD("0")
     setTransactionRequest(null)
+    setRecipientAddress("0xE7F48E6dCfBeA43ff5CD1F1570f6543878cCF156")
   }
 
   useEffect(() => {
@@ -252,11 +253,15 @@ export default function TransferDialog() {
         </div>
 
         <div className="flex items-center rounded-lg bg-muted p-2  sm:p-4">
-          <Input
+          {/* <Input
             placeholder="Enter recipient address"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
             className=" flex-grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
+          /> */}
+          <RecipientAddressInput
+            initialAddress={recipientAddress}
+            onAddressChange={setRecipientAddress}
           />
         </div>
 

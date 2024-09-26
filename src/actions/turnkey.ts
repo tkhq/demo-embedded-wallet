@@ -19,6 +19,8 @@ const {
   TURNKEY_API_PRIVATE_KEY,
   TURNKEY_WARCHEST_API_PUBLIC_KEY,
   TURNKEY_WARCHEST_API_PRIVATE_KEY,
+  TURNKEY_WARCHEST_ORGANIZATION_ID,
+  WARCHEST_PRIVATE_KEY_ID,
 } = env
 
 const stamper = new ApiKeyStamper({
@@ -306,13 +308,11 @@ const warchestStamper = new ApiKeyStamper({
 
 const warchestClient = new TurnkeyServerClient({
   apiBaseUrl: turnkeyConfig.apiBaseUrl,
-  organizationId: turnkeyConfig.organizationId,
-  stamper,
+  organizationId: TURNKEY_WARCHEST_ORGANIZATION_ID,
+  stamper: warchestStamper,
 })
 
-const WARCHEST_PRIVATE_KEY_ID = "77a4ea26-4d09-4e83-b114-81a3495cf2f5"
-
-export const fundWallet = async (address: Address) => {
+export const fundWallet = async (address: Address, value: bigint) => {
   const walletClient = await getTurnkeyWalletClient(
     warchestClient,
     WARCHEST_PRIVATE_KEY_ID
@@ -320,7 +320,7 @@ export const fundWallet = async (address: Address) => {
 
   const txHash = await walletClient.sendTransaction({
     to: address,
-    value: parseEther("0.005"),
+    value,
   })
   return txHash
 }

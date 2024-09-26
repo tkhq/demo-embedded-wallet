@@ -15,7 +15,7 @@ export const useUser = () => {
       if (turnkey) {
         // Try and get the current user
         const currentUser = await turnkey.getCurrentUser()
-        console.log("currentUser", currentUser)
+
         // If the user is not found, we assume the user is not logged in
         if (!currentUser) {
           router.push("/")
@@ -44,7 +44,7 @@ export const useUser = () => {
             organizationId: currentUser?.organization?.organizationId,
             userId: currentUser?.userId,
           })) || {}
-        console.log("user", user)
+
         // Set the user's email in the userData object
         userData = { ...currentUser, email: user?.userEmail as Email }
         setUser(userData)

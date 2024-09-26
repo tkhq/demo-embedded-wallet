@@ -1,3 +1,4 @@
+import { fundWallet as serverFundWallet } from "@/actions/turnkey"
 import { TurnkeyBrowserClient } from "@turnkey/sdk-browser"
 import { TurnkeyServerClient } from "@turnkey/sdk-server"
 import { createAccount } from "@turnkey/viem"
@@ -19,7 +20,6 @@ import {
   PublicClient,
   webSocket,
 } from "viem"
-import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
 
 import { env } from "@/env.mjs"
@@ -126,51 +126,11 @@ export const watchPendingTransactions = (
   return unwatch
 }
 
-// export const watchPendingTransactions = (
-//   address: Address,
-//   callback: (tx: Transaction) => void
-// ) => {
-//   // const publicClient = getPublicClient()
-//   // const unwatch = publicClient.watchPendingTransactions({
-//   //   onTransactions: (hashes) => console.log(hashes),
-//   // })
-
-//   console.log("watching pending transactions for", address)
-//   alchemy.ws.on(
-//     {
-//       method: AlchemySubscription.PENDING_TRANSACTIONS,
-//       fromAddress: address,
-//     },
-//     (tx) => callback(tx)
-//   )
-//   alchemy.ws.on(
-//     {
-//       method: AlchemySubscription.PENDING_TRANSACTIONS,
-//       toAddress: address,
-//     },
-//     (tx) => callback(tx)
-//   )
-// }
-
-export const fundWallet = async (address: Address, amount: string) => {
-  const publicClient = getPublicClient()
-  // TODO: get private key from env
-  const privateKey =
-    "0x4b48b9be7ec201bf165e90e89f451bf13ac8b569fd86d0c17977d67dc3642b35"
-
-  const client = createWalletClient({
-    chain: sepolia,
-    transport: http(turnkeyConfig.rpcUrl),
-  })
-
-  const account = privateKeyToAccount(privateKey)
-
+export const fundWallet = async (address: Address) => {
+  const amount = "0.02" // ETH
   try {
-    const hash = await client.sendTransaction({
-      account,
-      to: address,
-      value: parseEther(amount),
-    })
+    const publicClient = getPublicClient()
+    const hash = await serverFundWallet(address, parseEther(amount))
 
     const toastId = showTransactionToast({
       hash,

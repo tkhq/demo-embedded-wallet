@@ -222,7 +222,6 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   }, [state.selectedWallet])
 
   const newWalletAccount = async () => {
-    console.log("newWalletAccount")
     dispatch({ type: "SET_LOADING", payload: true })
     try {
       const activeClient = await getActiveClient()

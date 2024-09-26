@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { fundWallet } from "@/actions/turnkey"
 import { useWallets } from "@/providers/wallet-provider"
 import { CopyIcon, Download, HandCoins, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { formatEther } from "viem"
 
 import { truncateAddress } from "@/lib/utils"
+import { fundWallet } from "@/lib/web3"
 import { useTokenPrice } from "@/hooks/use-token-price"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,8 +31,7 @@ export default function WalletCard() {
 
   const handleFundWallet = async () => {
     if (!selectedAccount?.address) return
-    const txHash = await fundWallet(selectedAccount?.address)
-    console.log(txHash)
+    await fundWallet(selectedAccount?.address)
   }
 
   const handleCopyAddress = () => {
