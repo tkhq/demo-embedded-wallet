@@ -6,14 +6,20 @@ import {
   TurnkeyServerClient,
 } from "@turnkey/sdk-server"
 import { decode, JwtPayload } from "jsonwebtoken"
-import { getAddress } from "viem"
+import { Address, getAddress, parseEther } from "viem"
 
 import { env } from "@/env.mjs"
 import { Attestation, Email, Wallet } from "@/types/turnkey"
 import { siteConfig } from "@/config/site"
 import { turnkeyConfig } from "@/config/turnkey"
+import { getTurnkeyWalletClient } from "@/lib/web3"
 
-const { TURNKEY_API_PUBLIC_KEY, TURNKEY_API_PRIVATE_KEY } = env
+const {
+  TURNKEY_API_PUBLIC_KEY,
+  TURNKEY_API_PRIVATE_KEY,
+  TURNKEY_WARCHEST_API_PUBLIC_KEY,
+  TURNKEY_WARCHEST_API_PRIVATE_KEY,
+} = env
 
 const stamper = new ApiKeyStamper({
   apiPublicKey: TURNKEY_API_PUBLIC_KEY,
@@ -291,4 +297,30 @@ export const getAuthenticator = async (
     authenticatorId,
   })
   return authenticator
+}
+
+const warchestStamper = new ApiKeyStamper({
+  apiPublicKey: TURNKEY_WARCHEST_API_PUBLIC_KEY,
+  apiPrivateKey: TURNKEY_WARCHEST_API_PRIVATE_KEY,
+})
+
+const warchestClient = new TurnkeyServerClient({
+  apiBaseUrl: turnkeyConfig.apiBaseUrl,
+  organizationId: turnkeyConfig.organizationId,
+  stamper,
+})
+
+const WARCHEST_PRIVATE_KEY_ID = "77a4ea26-4d09-4e83-b114-81a3495cf2f5"
+
+export const fundWallet = async (address: Address) => {
+  const walletClient = await getTurnkeyWalletClient(
+    warchestClient,
+    WARCHEST_PRIVATE_KEY_ID
+  )
+
+  const txHash = await walletClient.sendTransaction({
+    to: address,
+    value: parseEther("0.005"),
+  })
+  return txHash
 }

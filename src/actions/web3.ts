@@ -1,11 +1,9 @@
 "use server"
 
 import { Alchemy, Network } from "alchemy-sdk"
-import { Address, createPublicClient, http } from "viem"
-import { sepolia } from "viem/chains"
+import { Address } from "viem"
 
 import { env } from "@/env.mjs"
-import { turnkeyConfig } from "@/config/turnkey"
 
 const settings = {
   apiKey: env.NEXT_PUBLIC_ALCHEMY_API_KEY,
