@@ -1,8 +1,9 @@
 import { SiteConfig } from "@/types"
 
-const baseUrl = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
-  : `https://${process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL}`
+const baseUrl =
+  process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
+    : `https://${process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL}`
 
 export const siteConfig: SiteConfig = {
   name: "Demo Embedded Wallet",
