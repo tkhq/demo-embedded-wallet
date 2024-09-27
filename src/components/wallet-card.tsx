@@ -31,7 +31,7 @@ export default function WalletCard() {
 
   const handleFundWallet = async () => {
     if (!selectedAccount?.address) return
-    await fundWallet(selectedAccount?.address, "0.005")
+    await fundWallet(selectedAccount?.address)
   }
 
   const handleCopyAddress = () => {

@@ -22,6 +22,10 @@ export const env = createEnv({
     NEXT_PUBLIC_ORGANIZATION_ID: z.string().min(1),
     NEXT_PUBLIC_ALCHEMY_API_KEY: z.string().min(1),
     COINGECKO_API_KEY: z.string().min(1),
+    TURNKEY_WARCHEST_API_PUBLIC_KEY: z.string().min(1),
+    TURNKEY_WARCHEST_API_PRIVATE_KEY: z.string().min(1),
+    TURNKEY_WARCHEST_ORGANIZATION_ID: z.string().min(1),
+    WARCHEST_PRIVATE_KEY_ID: z.string().min(1),
   },
   runtimeEnv: {
     NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID:
@@ -36,6 +40,13 @@ export const env = createEnv({
     NEXT_PUBLIC_ORGANIZATION_ID: process.env.NEXT_PUBLIC_ORGANIZATION_ID,
     NEXT_PUBLIC_ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
     COINGECKO_API_KEY: process.env.COINGECKO_API_KEY,
+    TURNKEY_WARCHEST_API_PUBLIC_KEY:
+      process.env.TURNKEY_WARCHEST_API_PUBLIC_KEY,
+    TURNKEY_WARCHEST_API_PRIVATE_KEY:
+      process.env.TURNKEY_WARCHEST_API_PRIVATE_KEY,
+    TURNKEY_WARCHEST_ORGANIZATION_ID:
+      process.env.TURNKEY_WARCHEST_ORGANIZATION_ID,
+    WARCHEST_PRIVATE_KEY_ID: process.env.WARCHEST_PRIVATE_KEY_ID,
   },
   extends: [vercel()],
 })
