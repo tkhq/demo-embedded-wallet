@@ -14,6 +14,8 @@ import { siteConfig } from "@/config/site"
 import { turnkeyConfig } from "@/config/turnkey"
 import { getTurnkeyWalletClient } from "@/lib/web3"
 
+import { getBalance, getTransactions } from "./web3"
+
 const {
   TURNKEY_API_PUBLIC_KEY,
   TURNKEY_API_PRIVATE_KEY,
@@ -313,6 +315,13 @@ const warchestClient = new TurnkeyServerClient({
 })
 
 export const fundWallet = async (address: Address, value: bigint) => {
+  const { receivedTransactions } = await getTransactions(address)
+  const balance = await getBalance(address)
+
+  if (receivedTransactions.length > 5 || balance > value * 2n) {
+    return ""
+  }
+
   const walletClient = await getTurnkeyWalletClient(
     warchestClient,
     WARCHEST_PRIVATE_KEY_ID
@@ -322,5 +331,6 @@ export const fundWallet = async (address: Address, value: bigint) => {
     to: address,
     value,
   })
+
   return txHash
 }

@@ -98,9 +98,6 @@ const getWebSocketClient = () => {
     webSocketClient = createPublicClient({
       chain: sepolia,
       transport: webSocket("wss://ethereum-sepolia-rpc.publicnode.com"),
-      // transport: webSocket(
-      //   "wss://eth-sepolia.g.alchemy.com/v2/erQ2WeonfN1VMZQM_PgCMTQB4USjPXoD"
-      // ),
     })
   }
   return webSocketClient
@@ -127,10 +124,14 @@ export const watchPendingTransactions = (
 }
 
 export const fundWallet = async (address: Address) => {
-  const amount = "0.02" // ETH
+  const amount = "0.01" // ETH
   try {
     const publicClient = getPublicClient()
     const hash = await serverFundWallet(address, parseEther(amount))
+
+    if (hash === "") {
+      throw new Error("unable to drip from faucet. You may be dripped out 💧")
+    }
 
     const toastId = showTransactionToast({
       hash,
