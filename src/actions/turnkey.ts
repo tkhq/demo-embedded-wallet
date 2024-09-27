@@ -319,7 +319,7 @@ export const fundWallet = async (address: Address, value: bigint) => {
   const balance = await getBalance(address)
 
   if (receivedTransactions.length > 5 || balance > value * 2n) {
-    throw new Error("you have used your alotted number of faucet drips")
+    return ""
   }
 
   const walletClient = await getTurnkeyWalletClient(

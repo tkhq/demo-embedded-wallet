@@ -129,6 +129,10 @@ export const fundWallet = async (address: Address) => {
     const publicClient = getPublicClient()
     const hash = await serverFundWallet(address, parseEther(amount))
 
+    if (hash === "") {
+      throw new Error("unable to drip from faucet. You may be dripped out 💧")
+    }
+
     const toastId = showTransactionToast({
       hash,
       title: "Funding wallet...",
