@@ -1,9 +1,7 @@
 import { SiteConfig } from "@/types"
 
-import { env } from "@/env.mjs"
-
-const baseUrl = env.NEXT_PUBLIC_APP_URL
-  ? env.NEXT_PUBLIC_APP_URL
+const baseUrl = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
   : `https://${process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL}`
 
 export const siteConfig: SiteConfig = {
