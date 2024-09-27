@@ -9,6 +9,10 @@ import type { Transaction } from "@/types/web3"
 const settings = {
   apiKey: env.NEXT_PUBLIC_ALCHEMY_API_KEY,
   network: Network.ETH_SEPOLIA,
+  // https://github.com/alchemyplatform/alchemy-sdk-js/issues/400
+  connectionInfoOverrides: {
+    skipFetchSetup: true,
+  },
 }
 
 const alchemy = new Alchemy(settings)
