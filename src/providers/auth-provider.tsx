@@ -252,30 +252,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         subOrgId = subOrg.subOrganizationId
       }
 
-      const oauthResponse = await oauth({
-        credential,
-        targetPublicKey: `${authIframeClient?.iframePublicKey}`,
-        targetSubOrgId: subOrgId,
-      })
-      await authIframeClient?.injectCredentialBundle(
-        oauthResponse.credentialBundle
-      )
       if (authIframeClient?.iframePublicKey) {
-        const loginResponse = await authIframeClient?.loginWithReadWriteSession(
-          authIframeClient.iframePublicKey
+        const oauthResponse = await oauth({
+          credential,
+          targetPublicKey: authIframeClient?.iframePublicKey,
+          targetSubOrgId: subOrgId,
+        })
+        const injectSuccess = await authIframeClient?.injectCredentialBundle(
+          oauthResponse.credentialBundle
         )
-        if (loginResponse?.organizationId) {
-          // Save the user in localStorage
-          await setStorageValue(
-            StorageKeys.CurrentUser,
-            loginResponseToUser(loginResponse)
-          )
+        if (injectSuccess) {
+          const loginResponse =
+            await authIframeClient?.loginWithReadWriteSession(
+              authIframeClient.iframePublicKey
+            )
+          if (loginResponse?.organizationId) {
+            // Save the user in localStorage
+            await setStorageValue(
+              StorageKeys.CurrentUser,
+              loginResponseToUser(loginResponse)
+            )
 
-          dispatch({
-            type: "OAUTH",
-            payload: loginResponseToUser(loginResponse),
-          })
-          router.push("/dashboard")
+            dispatch({
+              type: "OAUTH",
+              payload: loginResponseToUser(loginResponse),
+            })
+            router.push("/dashboard")
+          }
         }
       }
     } catch (error: any) {
