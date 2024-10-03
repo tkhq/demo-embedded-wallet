@@ -10,11 +10,7 @@ import {
   oauth,
 } from "@/actions/turnkey"
 import { googleLogout } from "@react-oauth/google"
-import {
-  getStorageValue,
-  setStorageValue,
-  StorageKeys,
-} from "@turnkey/sdk-browser"
+import { setStorageValue, StorageKeys } from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 
 import { Email, ReadOnlySession, User } from "@/types/turnkey"
@@ -214,8 +210,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             },
           })
 
-          // New sub organization created, with passkey authenticator,
-          // redirect to login page to login with passkey
           if (subOrg && user) {
             const org = {
               organizationId: subOrg.subOrganizationId,
@@ -263,13 +257,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         targetPublicKey: `${authIframeClient?.iframePublicKey}`,
         targetSubOrgId: subOrgId,
       })
-      const credentialResponse = await authIframeClient?.injectCredentialBundle(
+      await authIframeClient?.injectCredentialBundle(
         oauthResponse.credentialBundle
       )
-
-      if (credentialResponse) {
-        const loginResponse = await authIframeClient?.login()
+      if (authIframeClient?.iframePublicKey) {
+        const loginResponse = await authIframeClient?.loginWithReadWriteSession(
+          authIframeClient.iframePublicKey
+        )
         if (loginResponse?.organizationId) {
+          // Save the user in localStorage
+          await setStorageValue(
+            StorageKeys.CurrentUser,
+            loginResponseToUser(loginResponse)
+          )
+
+          dispatch({
+            type: "OAUTH",
+            payload: loginResponseToUser(loginResponse),
+          })
           router.push("/dashboard")
         }
       }
