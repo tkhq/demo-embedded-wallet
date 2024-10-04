@@ -35,3 +35,5 @@ export interface ReadOnlySession {
   session: string
   sessionExpiry: number
 }
+
+export type OauthProviderParams = TurnkeyApiTypes["v1OauthProviderParams"]

@@ -19,7 +19,7 @@ export default function AddPasskey({
 }: {
   onPasskeyAdded: (authenticatorId: string) => void
 }) {
-  const { passkeyClient, turnkey, getActiveClient } = useTurnkey()
+  const { passkeyClient, getActiveClient } = useTurnkey()
   const { user } = useUser()
   const [open, setOpen] = useState(false)
   const [passkeyName, setPasskeyName] = useState("")

@@ -95,7 +95,9 @@ const AuthContext = createContext<{
     credentialBundle: string
   }) => Promise<void>
   loginWithPasskey: (email?: Email) => Promise<void>
-  loginWithOAuth: (credential: string) => Promise<void>
+  loginWithOAuth: (credential: string, providerName: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
+  loginWithApple: (credential: string) => Promise<void>
   logout: () => Promise<void>
 }>({
   state: initialState,
@@ -103,6 +105,8 @@ const AuthContext = createContext<{
   completeEmailAuth: async () => {},
   loginWithPasskey: async () => {},
   loginWithOAuth: async () => {},
+  loginWithGoogle: async () => {},
+  loginWithApple: async () => {},
   logout: async () => {},
 })
 
@@ -235,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const loginWithOAuth = async (credential: string) => {
+  const loginWithOAuth = async (credential: string, providerName: string) => {
     dispatch({ type: "LOADING", payload: true })
     try {
       // Determine if the user has a sub-organization associated with their email
@@ -246,7 +250,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Create a new sub-organization for the user
         const { subOrg } = await createUserSubOrg({
           oauth: {
-            credential,
+            oidcToken: credential,
+            providerName,
           },
         })
         subOrgId = subOrg.subOrganizationId
@@ -288,6 +293,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const loginWithGoogle = async (credential: string) => {
+    await loginWithOAuth(credential, "Google Auth - Embedded Wallet")
+  }
+
+  const loginWithApple = async (credential: string) => {
+    await loginWithOAuth(credential, "Apple Auth - Embedded Wallet")
+  }
+
   const logout = async () => {
     await turnkey?.logoutUser()
     googleLogout()
@@ -302,6 +315,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         completeEmailAuth,
         loginWithPasskey,
         loginWithOAuth,
+        loginWithGoogle,
+        loginWithApple,
         logout,
       }}
     >
