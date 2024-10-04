@@ -177,38 +177,6 @@ export const initEmailAuth = async ({
   }
 }
 
-export const initEmailRecovery = async ({
-  email,
-  targetPublicKey,
-}: {
-  email: Email
-  targetPublicKey: string
-}) => {
-  let organizationId = await getSubOrgIdByEmail(email as Email)
-
-  if (!organizationId) {
-    const { subOrg } = await createUserSubOrg({
-      email: email as Email,
-    })
-    organizationId = subOrg.subOrganizationId
-  }
-
-  const magicLinkTemplate = getMagicLinkTemplate("auth", email, "email")
-
-  if (organizationId?.length) {
-    const authResponse = await client.emailAuth({
-      email,
-      targetPublicKey,
-      organizationId,
-      emailCustomization: {
-        magicLinkTemplate,
-      },
-    })
-
-    return authResponse
-  }
-}
-
 type EmailParam = { email: Email }
 type PublicKeyParam = { publicKey: string }
 type UsernameParam = { username: string }
