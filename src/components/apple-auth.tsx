@@ -11,7 +11,7 @@ import { env } from "@/env.mjs"
 
 import { Skeleton } from "./ui/skeleton"
 
-const AppleAuth = () => {
+const AppleAuth = ({ loading }: { loading: boolean }) => {
   const clientId = env.NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID
   const redirectURI = env.NEXT_PUBLIC_APP_URL
 
@@ -46,6 +46,8 @@ const AppleAuth = () => {
   // Trigger loginWithOAuth when both token and iframePublicKey are available, but only once
   useEffect(() => {
     if (storedToken && authIframeClient?.iframePublicKey && !hasLoggedIn) {
+      console.log("doing the thing to the things")
+
       // Call the OAuth login function with the stored token
       loginWithOAuth(storedToken)
 
