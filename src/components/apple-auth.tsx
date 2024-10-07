@@ -11,8 +11,9 @@ import { env } from "@/env.mjs"
 
 import { Skeleton } from "./ui/skeleton"
 
-const AppleAuth = ({ loading }: { loading: boolean }) => {
+const AppleAuth = () => {
   const clientId = env.NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID
+  const redirectURI = env.NEXT_PUBLIC_APP_URL
 
   const { authIframeClient } = useTurnkey()
   const { loginWithOAuth } = useAuth()
@@ -63,7 +64,7 @@ const AppleAuth = ({ loading }: { loading: boolean }) => {
       {nonce ? (
         <AppleLogin
           clientId={clientId}
-          redirectURI="https://fun.turnkey.io/apple-callback"
+          redirectURI={redirectURI as string}
           responseType="id_token code"
           nonce={nonce}
           responseMode="fragment"
