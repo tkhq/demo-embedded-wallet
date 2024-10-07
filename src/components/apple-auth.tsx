@@ -7,20 +7,23 @@ import { useTurnkey } from "@turnkey/sdk-react"
 import AppleLogin from "react-apple-login"
 import { sha256 } from "viem"
 
-import { env } from "@/env.mjs"
-
-import { Skeleton } from "./ui/skeleton"
-
-// @todo: these will be used once we can create a custom google login button
 const AppleAuth = () => {
   const { authIframeClient } = useTurnkey()
-
-  const [nonce, setNonce] = useState("")
   const { loginWithOAuth } = useAuth()
 
+  const [nonce, setNonce] = useState<string>("")
+  const [storedToken, setStoredToken] = useState<string | null>(null) // Store the token locally
   const searchParams = useSearchParams()
-  const token = searchParams.get("id_token")
 
+  // Get token from query string params and store in state when available
+  useEffect(() => {
+    const token = searchParams.get("id_token")
+    if (token) {
+      setStoredToken(token) // Store token if available
+    }
+  }, [searchParams])
+
+  // Generate nonce based on iframePublicKey
   useEffect(() => {
     if (authIframeClient?.iframePublicKey) {
       const hashedPublicKey = sha256(
@@ -29,17 +32,24 @@ const AppleAuth = () => {
 
       setNonce(hashedPublicKey)
     }
-    if (
-      typeof token !== undefined &&
-      token !== null &&
-      authIframeClient?.iframePublicKey !== undefined
-    ) {
-      console.log("we have a valid token")
-      console.log(token)
-      console.log(authIframeClient.iframePublicKey)
-      loginWithOAuth(token as string)
+  }, [authIframeClient?.iframePublicKey])
+
+  // Trigger loginWithOAuth when both token and iframePublicKey are available
+  useEffect(() => {
+    if (storedToken && authIframeClient?.iframePublicKey) {
+      console.log("Both token and iframePublicKey are available")
+      console.log("ID Token:", storedToken)
+      console.log("iframePublicKey:", authIframeClient.iframePublicKey)
+
+      // Call the OAuth login function with the stored token
+      loginWithOAuth(storedToken)
     }
-  }, [authIframeClient?.iframePublicKey, token])
+  }, [storedToken, authIframeClient?.iframePublicKey, loginWithOAuth])
+
+  // Ensure nonce is set correctly before rendering AppleLogin
+  if (!nonce) {
+    return <div>Loading...</div> // Or some appropriate loading state
+  }
 
   return (
     <AppleLogin
