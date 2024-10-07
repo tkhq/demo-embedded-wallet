@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTurnkey } from "@turnkey/sdk-react"
@@ -38,11 +38,6 @@ export default function Auth() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const router = useRouter()
 
-  const searchParams = useSearchParams()
-
-  // Extract specific query params
-  const paramValue = searchParams.get("fun") // Replace 'paramKey' with the actual param key you expect
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,7 +46,6 @@ export default function Auth() {
   })
 
   useEffect(() => {
-    console.log(paramValue)
     if (user) {
       router.push("/dashboard")
     }
