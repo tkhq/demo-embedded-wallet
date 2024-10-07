@@ -242,6 +242,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const loginWithOAuth = async (credential: string) => {
+    console.log("OAUTH ING")
+    console.log(credential)
+
     dispatch({ type: "LOADING", payload: true })
     try {
       // Determine if the user has a sub-organization associated with their email
@@ -257,6 +260,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
         subOrgId = subOrg.subOrganizationId
       }
+
+      console.log("outgoing")
+      console.log({
+        credential,
+        targetPublicKey: `${authIframeClient?.iframePublicKey}`,
+        targetSubOrgId: subOrgId,
+      })
 
       const oauthResponse = await oauth({
         credential,

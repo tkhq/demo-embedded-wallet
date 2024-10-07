@@ -5,6 +5,7 @@ import { z } from "zod"
 export const env = createEnv({
   client: {
     NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
+    NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID: z.string().min(1),
     NEXT_PUBLIC_RP_ID: z.string().optional(),
     NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
     NEXT_PUBLIC_APP_URL: z.string().optional(),
@@ -28,6 +29,8 @@ export const env = createEnv({
     WARCHEST_PRIVATE_KEY_ID: z.string().min(1),
   },
   runtimeEnv: {
+    NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID:
+      process.env.NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID,
     NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID:
       process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
     NEXT_PUBLIC_RP_ID: process.env.NEXT_PUBLIC_RP_ID,

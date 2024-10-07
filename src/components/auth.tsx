@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTurnkey } from "@turnkey/sdk-react"
@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
+import AppleAuth from "./apple-auth"
 import GoogleAuth from "./google-auth"
 import { Icons } from "./icons"
 import Legal from "./legal"
@@ -37,6 +38,11 @@ export default function Auth() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const router = useRouter()
 
+  const searchParams = useSearchParams()
+
+  // Extract specific query params
+  const paramValue = searchParams.get("fun") // Replace 'paramKey' with the actual param key you expect
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -45,6 +51,7 @@ export default function Auth() {
   })
 
   useEffect(() => {
+    console.log(paramValue)
     if (user) {
       router.push("/dashboard")
     }
@@ -144,19 +151,7 @@ export default function Auth() {
             </div>
           </div>
           <GoogleAuth loading={state.loading && loadingAction === "email"} />
-          {/* <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or
-              </span>
-            </div>
-          </div>
-          <Button disabled variant="outline" className="w-full font-semibold">
-            Continue with Wallet
-          </Button> */}
+          <AppleAuth loading={state.loading && loadingAction === "email"} />
         </CardContent>
       </Card>
       <Legal />
