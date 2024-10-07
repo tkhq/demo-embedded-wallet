@@ -7,12 +7,20 @@ import { useTurnkey } from "@turnkey/sdk-react"
 import AppleLogin from "react-apple-login"
 import { sha256 } from "viem"
 
-const AppleAuth = () => {
+import { env } from "@/env.mjs"
+
+import { Skeleton } from "./ui/skeleton"
+
+const AppleAuth = ({ loading }: { loading: boolean }) => {
+  const clientId = env.NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID
+
   const { authIframeClient } = useTurnkey()
   const { loginWithOAuth } = useAuth()
 
   const [nonce, setNonce] = useState<string>("")
   const [storedToken, setStoredToken] = useState<string | null>(null) // Store the token locally
+  const [hasLoggedIn, setHasLoggedIn] = useState(false) // Track if loginWithOAuth has been called
+
   const searchParams = useSearchParams()
 
   // Get token from query string params and store in state when available
@@ -34,31 +42,36 @@ const AppleAuth = () => {
     }
   }, [authIframeClient?.iframePublicKey])
 
-  // Trigger loginWithOAuth when both token and iframePublicKey are available
+  // Trigger loginWithOAuth when both token and iframePublicKey are available, but only once
   useEffect(() => {
-    if (storedToken && authIframeClient?.iframePublicKey) {
-      console.log("Both token and iframePublicKey are available")
-      console.log("ID Token:", storedToken)
-      console.log("iframePublicKey:", authIframeClient.iframePublicKey)
-
+    if (storedToken && authIframeClient?.iframePublicKey && !hasLoggedIn) {
       // Call the OAuth login function with the stored token
       loginWithOAuth(storedToken)
-    }
-  }, [storedToken, authIframeClient?.iframePublicKey, loginWithOAuth])
 
-  // Ensure nonce is set correctly before rendering AppleLogin
-  if (!nonce) {
-    return <div>Loading...</div> // Or some appropriate loading state
-  }
+      // Set flag to prevent further calls
+      setHasLoggedIn(true)
+    }
+  }, [
+    storedToken,
+    authIframeClient?.iframePublicKey,
+    hasLoggedIn,
+    loginWithOAuth,
+  ])
 
   return (
-    <AppleLogin
-      clientId="io.turnkey.app"
-      redirectURI="https://fun.turnkey.io/apple-callback"
-      responseType="id_token code"
-      nonce={nonce}
-      responseMode="fragment"
-    />
+    <>
+      {nonce ? (
+        <AppleLogin
+          clientId={clientId}
+          redirectURI="https://fun.turnkey.io/apple-callback"
+          responseType="id_token code"
+          nonce={nonce}
+          responseMode="fragment"
+        />
+      ) : (
+        <Skeleton className="h-10 w-full" />
+      )}
+    </>
   )
 }
 
