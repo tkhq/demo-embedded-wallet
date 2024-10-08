@@ -26,9 +26,13 @@ function OAuthProcessCallback() {
 
   // Get token from query string params and store in state when available
   useEffect(() => {
-    const token = searchParams.get("id_token")
-    if (token) {
-      setStoredToken(token) // Store token if available
+    const fragment = window.location.hash
+    if (fragment) {
+      const params = new URLSearchParams(fragment.slice(1)) // Remove the "#" and parse parameters
+      const token = params.get("id_token")
+      if (token) {
+        setStoredToken(token) // Store token if available
+      }
     }
   }, [searchParams])
 
