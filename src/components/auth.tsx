@@ -145,6 +145,7 @@ export default function Auth() {
             </div>
           </div>
           <GoogleAuth />
+          <AppleAuth />
         </CardContent>
       </Card>
       <Legal />

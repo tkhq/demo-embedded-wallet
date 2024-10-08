@@ -19,7 +19,7 @@ function OAuthProcessCallback() {
   const searchParams = useSearchParams()
 
   const { authIframeClient } = useTurnkey()
-  const { loginWithOAuth } = useAuth()
+  const { loginWithApple } = useAuth()
 
   const [storedToken, setStoredToken] = useState<string | null>(null) // Store the token locally
   const [hasLoggedIn, setHasLoggedIn] = useState(false) // Track if loginWithOAuth has been called
@@ -40,7 +40,7 @@ function OAuthProcessCallback() {
   useEffect(() => {
     if (storedToken && authIframeClient?.iframePublicKey && !hasLoggedIn) {
       // Call the OAuth login function with the stored token
-      loginWithOAuth(storedToken)
+      loginWithApple(storedToken)
 
       // Set flag to prevent further calls
       setHasLoggedIn(true)
@@ -49,7 +49,7 @@ function OAuthProcessCallback() {
     storedToken,
     authIframeClient?.iframePublicKey,
     hasLoggedIn,
-    loginWithOAuth,
+    loginWithApple,
   ])
 
   return <div>Redirecting...</div>
