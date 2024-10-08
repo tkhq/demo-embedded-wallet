@@ -4,16 +4,6 @@ import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
-import { Loader, Send } from "lucide-react"
-import { sha256 } from "viem"
-
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Icons } from "@/components/icons"
 
 function OAuthProcessCallback() {
   const searchParams = useSearchParams()
