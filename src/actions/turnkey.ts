@@ -9,7 +9,12 @@ import { decode, JwtPayload } from "jsonwebtoken"
 import { Address, getAddress, parseEther } from "viem"
 
 import { env } from "@/env.mjs"
-import { Attestation, Email, Wallet } from "@/types/turnkey"
+import {
+  Attestation,
+  Email,
+  OauthProviderParams,
+  Wallet,
+} from "@/types/turnkey"
 import { siteConfig } from "@/config/site"
 import { turnkeyConfig } from "@/config/turnkey"
 import { getTurnkeyWalletClient } from "@/lib/web3"
@@ -56,9 +61,7 @@ export const createUserSubOrg = async ({
     challenge: string
     attestation: Attestation
   }
-  oauth?: {
-    credential: string
-  }
+  oauth?: OauthProviderParams
 }) => {
   const authenticators = passkey
     ? [
@@ -73,8 +76,8 @@ export const createUserSubOrg = async ({
   const oauthProviders = oauth
     ? [
         {
-          providerName: "Google Auth - Embedded Wallet",
-          oidcToken: oauth.credential,
+          providerName: oauth.providerName,
+          oidcToken: oauth.oidcToken,
         },
       ]
     : []
@@ -83,7 +86,7 @@ export const createUserSubOrg = async ({
   // If the user is logging in with a Google Auth credential, use the email from the decoded OIDC token (credential
   // Otherwise, use the email from the email parameter
   if (oauth) {
-    const decoded = decodeJwt(oauth.credential)
+    const decoded = decodeJwt(oauth.oidcToken)
     if (decoded?.email) {
       userEmail = decoded.email
     }

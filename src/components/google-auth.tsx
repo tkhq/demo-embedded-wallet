@@ -14,13 +14,12 @@ import { env } from "@/env.mjs"
 
 import { Skeleton } from "./ui/skeleton"
 
-// @todo: these will be used once we can create a custom google login button
-const GoogleAuth = ({ loading }: { loading: boolean }) => {
+const GoogleAuth = () => {
   const { authIframeClient } = useTurnkey()
   const clientId = env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
 
   const [nonce, setNonce] = useState("")
-  const { loginWithOAuth } = useAuth()
+  const { loginWithGoogle } = useAuth()
 
   useEffect(() => {
     if (authIframeClient?.iframePublicKey) {
@@ -34,7 +33,7 @@ const GoogleAuth = ({ loading }: { loading: boolean }) => {
 
   const onSuccess = (credentialResponse: CredentialResponse) => {
     if (credentialResponse.credential) {
-      loginWithOAuth(credentialResponse.credential as string)
+      loginWithGoogle(credentialResponse.credential as string)
     }
   }
 

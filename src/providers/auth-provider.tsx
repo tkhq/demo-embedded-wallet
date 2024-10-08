@@ -10,11 +10,7 @@ import {
   oauth,
 } from "@/actions/turnkey"
 import { googleLogout } from "@react-oauth/google"
-import {
-  getStorageValue,
-  setStorageValue,
-  StorageKeys,
-} from "@turnkey/sdk-browser"
+import { setStorageValue, StorageKeys } from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 
 import { Email, ReadOnlySession, User } from "@/types/turnkey"
@@ -99,7 +95,9 @@ const AuthContext = createContext<{
     credentialBundle: string
   }) => Promise<void>
   loginWithPasskey: (email?: Email) => Promise<void>
-  loginWithOAuth: (credential: string) => Promise<void>
+  loginWithOAuth: (credential: string, providerName: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
+  loginWithApple: (credential: string) => Promise<void>
   logout: () => Promise<void>
 }>({
   state: initialState,
@@ -107,6 +105,8 @@ const AuthContext = createContext<{
   completeEmailAuth: async () => {},
   loginWithPasskey: async () => {},
   loginWithOAuth: async () => {},
+  loginWithGoogle: async () => {},
+  loginWithApple: async () => {},
   logout: async () => {},
 })
 
@@ -214,8 +214,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             },
           })
 
-          // New sub organization created, with passkey authenticator,
-          // redirect to login page to login with passkey
           if (subOrg && user) {
             const org = {
               organizationId: subOrg.subOrganizationId,
@@ -241,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const loginWithOAuth = async (credential: string) => {
+  const loginWithOAuth = async (credential: string, providerName: string) => {
     dispatch({ type: "LOADING", payload: true })
     try {
       // Determine if the user has a sub-organization associated with their email
@@ -252,25 +250,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Create a new sub-organization for the user
         const { subOrg } = await createUserSubOrg({
           oauth: {
-            credential,
+            oidcToken: credential,
+            providerName,
           },
         })
         subOrgId = subOrg.subOrganizationId
       }
 
-      const oauthResponse = await oauth({
-        credential,
-        targetPublicKey: `${authIframeClient?.iframePublicKey}`,
-        targetSubOrgId: subOrgId,
-      })
-      const credentialResponse = await authIframeClient?.injectCredentialBundle(
-        oauthResponse.credentialBundle
-      )
+      if (authIframeClient?.iframePublicKey) {
+        const oauthResponse = await oauth({
+          credential,
+          targetPublicKey: authIframeClient?.iframePublicKey,
+          targetSubOrgId: subOrgId,
+        })
+        const injectSuccess = await authIframeClient?.injectCredentialBundle(
+          oauthResponse.credentialBundle
+        )
+        if (injectSuccess) {
+          const loginResponse =
+            await authIframeClient?.loginWithReadWriteSession(
+              authIframeClient.iframePublicKey
+            )
+          if (loginResponse?.organizationId) {
+            // Save the user in localStorage
+            await setStorageValue(
+              StorageKeys.CurrentUser,
+              loginResponseToUser(loginResponse)
+            )
 
-      if (credentialResponse) {
-        const loginResponse = await authIframeClient?.login()
-        if (loginResponse?.organizationId) {
-          router.push("/dashboard")
+            dispatch({
+              type: "OAUTH",
+              payload: loginResponseToUser(loginResponse),
+            })
+            router.push("/dashboard")
+          }
         }
       }
     } catch (error: any) {
@@ -278,6 +291,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       dispatch({ type: "LOADING", payload: false })
     }
+  }
+
+  const loginWithGoogle = async (credential: string) => {
+    await loginWithOAuth(credential, "Google Auth - Embedded Wallet")
+  }
+
+  const loginWithApple = async (credential: string) => {
+    await loginWithOAuth(credential, "Apple Auth - Embedded Wallet")
   }
 
   const logout = async () => {
@@ -294,6 +315,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         completeEmailAuth,
         loginWithPasskey,
         loginWithOAuth,
+        loginWithGoogle,
+        loginWithApple,
         logout,
       }}
     >
