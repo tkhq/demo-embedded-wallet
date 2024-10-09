@@ -4,6 +4,10 @@ import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
+import { Loader } from "lucide-react"
+
+import { Card, CardHeader, CardTitle } from "@/components/ui/card"
+import { Icons } from "@/components/icons"
 
 function OAuthProcessCallback() {
   const searchParams = useSearchParams()
@@ -42,7 +46,21 @@ function OAuthProcessCallback() {
     loginWithApple,
   ])
 
-  return <div>Redirecting...</div>
+  return (
+    <main className="flex w-full flex-col items-center justify-center">
+      <Card className="mx-auto h-full w-full sm:w-1/2">
+        <CardHeader className="space-y-4">
+          <Icons.turnkey className="h-12 w-full stroke-0 py-2 dark:stroke-white sm:h-14" />
+          <CardTitle className="flex  items-center justify-center text-center">
+            <div className="flex items-center gap-2">
+              <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-base">Redirecting...</span>
+            </div>
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    </main>
+  )
 }
 
 export default function OAuth() {
