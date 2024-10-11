@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { SiApple } from "@icons-pack/react-simple-icons"
 import { useTurnkey } from "@turnkey/sdk-react"
 import AppleLogin from "react-apple-login"
 import { sha256 } from "viem"
@@ -8,6 +9,7 @@ import { sha256 } from "viem"
 import { env } from "@/env.mjs"
 import { siteConfig } from "@/config/site"
 
+import { Button } from "./ui/button"
 import { Skeleton } from "./ui/skeleton"
 
 const AppleAuth = () => {
@@ -39,11 +41,12 @@ const AppleAuth = () => {
             responseType="code id_token"
             nonce={nonce}
             responseMode="fragment"
-            designProp={{
-              width: 182,
-              height: 38,
-              border_radius: 12,
-            }}
+            render={({ onClick }) => (
+              <Button variant="outline" onClick={onClick}>
+                <SiApple className="mr-2 h-4 w-4" />
+                Continue with Apple
+              </Button>
+            )}
           />
         </div>
       ) : (
