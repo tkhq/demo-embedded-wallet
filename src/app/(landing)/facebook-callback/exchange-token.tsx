@@ -18,10 +18,6 @@ export async function exchangeToken(code: string, codeVerifier: string) {
   try {
     const target = `${url}?${params.toString()}`
 
-    console.log(target)
-
-    return ""
-
     const response = await fetch(target, {
       method: "GET",
     })
