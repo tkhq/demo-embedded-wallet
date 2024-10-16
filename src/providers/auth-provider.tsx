@@ -98,6 +98,7 @@ const AuthContext = createContext<{
   loginWithOAuth: (credential: string, providerName: string) => Promise<void>
   loginWithGoogle: (credential: string) => Promise<void>
   loginWithApple: (credential: string) => Promise<void>
+  loginWithFacebook: (credential: string) => Promise<void>
   logout: () => Promise<void>
 }>({
   state: initialState,
@@ -107,6 +108,7 @@ const AuthContext = createContext<{
   loginWithOAuth: async () => {},
   loginWithGoogle: async () => {},
   loginWithApple: async () => {},
+  loginWithFacebook: async () => {},
   logout: async () => {},
 })
 
@@ -301,6 +303,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await loginWithOAuth(credential, "Apple Auth - Embedded Wallet")
   }
 
+  const loginWithFacebook = async (credential: string) => {
+    await loginWithOAuth(credential, "Facebook Auth - Embedded Wallet")
+  }
+
   const logout = async () => {
     await turnkey?.logoutUser()
     googleLogout()
@@ -317,6 +323,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loginWithOAuth,
         loginWithGoogle,
         loginWithApple,
+        loginWithFacebook,
         logout,
       }}
     >
