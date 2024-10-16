@@ -14,7 +14,7 @@ import { Skeleton } from "./ui/skeleton"
 
 const AppleAuth = () => {
   const clientId = env.NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID
-  const redirectURI = `${siteConfig.url.base}/oauth-callback`
+  const redirectURI = `${siteConfig.url.base}/oauth-callback/apple`
 
   const { authIframeClient } = useTurnkey()
 

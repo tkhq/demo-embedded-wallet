@@ -15,7 +15,7 @@ const FacebookAuth = () => {
 
   const [nonce, setNonce] = useState<string>("")
 
-  const redirectURI = `${siteConfig.url.base}/facebook-callback`
+  const redirectURI = `${siteConfig.url.base}/oauth-callback/facebook`
 
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
 
