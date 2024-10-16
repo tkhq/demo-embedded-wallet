@@ -18,16 +18,13 @@ function FacebookProcessCallback() {
   const { authIframeClient } = useTurnkey()
   const { loginWithFacebook } = useAuth()
 
-  const [storedCode, setStoredCode] = useState<string | null>(null) // Store the token locally
-  const [storedState, setStoredState] = useState<string | null>(null) // Store the token locally
-  const [hasLoggedIn, setHasLoggedIn] = useState(false) // Track if loginWithOAuth has been called
+  const [storedCode, setStoredCode] = useState<string | null>(null)
+  const [storedState, setStoredState] = useState<string | null>(null)
+  const [hasLoggedIn, setHasLoggedIn] = useState(false)
 
   const getToken = async () => {
     const verifier = await verifierSegmentToChallenge(storedState || "")
     const token = await exchangeToken(storedCode || "", verifier)
-
-    console.log("got token!")
-    console.log(token)
 
     return token
   }
@@ -37,10 +34,10 @@ function FacebookProcessCallback() {
     const code = searchParams.get("code")
     const state = searchParams.get("state")
     if (code) {
-      setStoredCode(code) // Store token if available
+      setStoredCode(code)
     }
     if (state) {
-      setStoredState(state) // Store token if available
+      setStoredState(state)
     }
   }, [searchParams])
 

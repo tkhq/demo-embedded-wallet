@@ -8,7 +8,6 @@ export async function exchangeToken(code: string, codeVerifier: string) {
   const redirectURI = `${env.NEXT_PUBLIC_APP_URL}/facebook-callback`
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
 
-  // Create URLSearchParams with the required parameters
   const params = new URLSearchParams({
     client_id: clientID,
     redirect_uri: redirectURI,
@@ -19,7 +18,6 @@ export async function exchangeToken(code: string, codeVerifier: string) {
   try {
     const target = `${url}?${params.toString()}`
 
-    // Perform a GET request with the params appended to the URL
     const response = await fetch(target, {
       method: "GET",
     })
@@ -38,7 +36,6 @@ export async function exchangeToken(code: string, codeVerifier: string) {
 
     return idToken
   } catch (error) {
-    console.error("Error during token exchange:", error)
     throw error
   }
 }

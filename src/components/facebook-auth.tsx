@@ -1,9 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/providers/auth-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
-import AppleLogin from "react-apple-login"
 import { sha256 } from "viem"
 
 import { env } from "@/env.mjs"
@@ -17,7 +15,7 @@ const FacebookAuth = () => {
 
   const [nonce, setNonce] = useState<string>("")
 
-  const redirectURI = `${env.NEXT_PUBLIC_APP_URL}/facebook-callback`
+  const redirectURI = `${siteConfig.url.base}/facebook-callback`
 
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
 
@@ -35,19 +33,18 @@ const FacebookAuth = () => {
   const redirectToFacebook = async () => {
     const { verifier, codeChallenge } = await generateChallengePair()
 
-    const state = "state123abc" // Replace with a state parameter
-    const codeChallengeMethod = "plain" // The method used to generate the code_challenge
+    const codeChallengeMethod = "sha256"
 
     // Generate the Facebook OAuth URL server-side
     const params = new URLSearchParams({
       client_id: clientID,
-      scope: "openid",
-      response_type: "code",
       redirect_uri: redirectURI,
       state: verifier,
       code_challenge: codeChallenge,
       code_challenge_method: codeChallengeMethod,
       nonce: nonce,
+      scope: "openid",
+      response_type: "code",
     } as any)
 
     const facebookOAuthURL = `https://www.facebook.com/v11.0/dialog/oauth?${params.toString()}`
