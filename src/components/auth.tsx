@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
 import AppleAuth from "./apple-auth"
+import FacebookAuth from "./facebook-auth"
 import GoogleAuth from "./google-auth"
 import { Icons } from "./icons"
 import Legal from "./legal"
@@ -78,6 +79,12 @@ export default function Auth() {
       await handleEmailLogin(email)
     }
   }
+
+  const fbCallback = (resp: any) => {
+    console.log(resp)
+  }
+
+  // "EAARXv0lqRVABOzD44ZBXz0SrK5yYoPdyq5sW9zgllG4y0KbPbEGqFUPZCwa82eH34eeT96i2ZBa2J1ufS48OP4xfTOYFdZBSTKECXTUeHjq8eRTT8CYTVZAc9vfzVwfUNwQJGsJKrkOaFS7ouxR6DtcNSElhUUAOf01VbgHxGPklSZB3pRk4WYoBiZC01Tloj9XVRZC98TXI1GRPHbDYrwJpNZB0Sj9a00AZDZD"
 
   return (
     <>
@@ -146,6 +153,7 @@ export default function Auth() {
           </div>
           <GoogleAuth />
           <AppleAuth />
+          <FacebookAuth />
         </CardContent>
       </Card>
       <Legal />
