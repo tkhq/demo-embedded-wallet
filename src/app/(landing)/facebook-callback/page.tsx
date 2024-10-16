@@ -49,10 +49,10 @@ function FacebookProcessCallback() {
         const token = await getToken()
 
         // Perform the Facebook login with the token
-        loginWithFacebook(token)
+        // loginWithFacebook(token)
 
-        // Set flag to prevent further calls
-        setHasLoggedIn(true)
+        // // Set flag to prevent further calls
+        // setHasLoggedIn(true)
       } catch (error) {
         console.error("Error during token exchange:", error)
       }
