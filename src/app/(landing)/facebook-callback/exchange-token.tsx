@@ -1,12 +1,13 @@
 "use server"
 
 import { env } from "@/env.mjs"
+import { siteConfig } from "@/config/site"
 
 export async function exchangeToken(code: string, codeVerifier: string) {
   const url = "https://graph.facebook.com/v21.0/oauth/access_token"
 
-  const redirectURI = `${env.NEXT_PUBLIC_APP_URL}/facebook-callback`
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
+  const redirectURI = `${siteConfig.url.base}/facebook-callback`
 
   const params = new URLSearchParams({
     client_id: clientID,
