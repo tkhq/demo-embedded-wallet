@@ -7,7 +7,7 @@ export async function exchangeToken(code: string, codeVerifier: string) {
   const url = "https://graph.facebook.com/v21.0/oauth/access_token"
 
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
-  const redirectURI = `${siteConfig.url.base}/facebook-callback`
+  const redirectURI = `${siteConfig.url.base}/oauth-callback/facebook`
 
   const params = new URLSearchParams({
     client_id: clientID,
