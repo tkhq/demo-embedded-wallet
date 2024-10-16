@@ -124,10 +124,9 @@ export const watchPendingTransactions = (
 }
 
 export const fundWallet = async (address: Address) => {
-  const amount = "0.01" // ETH
   try {
     const publicClient = getPublicClient()
-    const hash = await serverFundWallet(address, parseEther(amount))
+    const hash = await serverFundWallet(address)
 
     if (hash === "") {
       throw new Error("unable to drip from faucet. You may be dripped out 💧")
@@ -136,7 +135,7 @@ export const fundWallet = async (address: Address) => {
     const toastId = showTransactionToast({
       hash,
       title: "Funding wallet...",
-      description: `Sending ${amount} ETH to ${truncateAddress(address)}`,
+      description: `Sending 0.01 ETH to ${truncateAddress(address)}`,
       type: "loading",
     })
 
@@ -148,7 +147,7 @@ export const fundWallet = async (address: Address) => {
       id: toastId,
       hash,
       title: "Funds received! 🎉",
-      description: `Wallet funded with ${amount} ETH`,
+      description: `Wallet funded with 0.01 ETH`,
       type: "success",
     })
 

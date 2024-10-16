@@ -317,7 +317,8 @@ const warchestClient = new TurnkeyServerClient({
   stamper: warchestStamper,
 })
 
-export const fundWallet = async (address: Address, value: bigint) => {
+export const fundWallet = async (address: Address) => {
+  const value = parseEther("0.01")
   const { receivedTransactions } = await getTransactions(address)
   const balance = await getBalance(address)
 
