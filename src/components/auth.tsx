@@ -80,12 +80,6 @@ export default function Auth() {
     }
   }
 
-  const fbCallback = (resp: any) => {
-    console.log(resp)
-  }
-
-  // "EAARXv0lqRVABOzD44ZBXz0SrK5yYoPdyq5sW9zgllG4y0KbPbEGqFUPZCwa82eH34eeT96i2ZBa2J1ufS48OP4xfTOYFdZBSTKECXTUeHjq8eRTT8CYTVZAc9vfzVwfUNwQJGsJKrkOaFS7ouxR6DtcNSElhUUAOf01VbgHxGPklSZB3pRk4WYoBiZC01Tloj9XVRZC98TXI1GRPHbDYrwJpNZB0Sj9a00AZDZD"
-
   return (
     <>
       <Card className="mx-auto w-full max-w-[450px]">
