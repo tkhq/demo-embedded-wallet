@@ -42,6 +42,7 @@ const GoogleAuth = () => {
       {nonce ? (
         <GoogleLogin
           nonce={nonce}
+          width={182}
           containerProps={{
             className: "w-full bg-white flex justify-center rounded-md",
           }}
