@@ -32,7 +32,7 @@ const AppleAuth = () => {
   return (
     <>
       {nonce ? (
-        <div className="flex w-full justify-center">
+        <div className="flex w-full cursor-pointer justify-center rounded-md bg-white">
           <AppleLogin
             clientId={clientId}
             redirectURI={redirectURI}
@@ -40,7 +40,7 @@ const AppleAuth = () => {
             nonce={nonce}
             responseMode="fragment"
             designProp={{
-              width: 222,
+              width: 182,
               height: 38,
               border_radius: 12,
             }}
