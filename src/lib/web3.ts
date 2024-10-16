@@ -124,10 +124,9 @@ export const watchPendingTransactions = (
 }
 
 export const fundWallet = async (address: Address) => {
-  const amount = "0.01" // ETH
   try {
     const publicClient = getPublicClient()
-    const hash = await serverFundWallet(address, parseEther(amount))
+    const hash = await serverFundWallet(address)
 
     if (hash === "") {
       throw new Error("unable to drip from faucet. You may be dripped out 💧")
