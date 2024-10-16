@@ -9,6 +9,7 @@ import { sha256 } from "viem"
 import { env } from "@/env.mjs"
 import { siteConfig } from "@/config/site"
 
+import { generateChallengePair } from "../lib/facebook-utils"
 import { Skeleton } from "./ui/skeleton"
 
 const FacebookAuth = () => {
@@ -31,12 +32,11 @@ const FacebookAuth = () => {
     }
   }, [authIframeClient?.iframePublicKey])
 
-  const redirectToFacebook = () => {
+  const redirectToFacebook = async () => {
+    const { verifier, codeChallenge } = await generateChallengePair()
+
     const state = "state123abc" // Replace with a state parameter
-    const codeVerifier =
-      "lqRVABO1ifZALKrJ3VZAmASUzuulW7sLkfYVhpwlmwPVUPkPmbvkhBlP3t6TgPHlOr6lmbmSZBBz9L2QFRcmOZCVaSiQWZBRsRxn" // Replace with your generated code_challenge
     const codeChallengeMethod = "plain" // The method used to generate the code_challenge
-    const codeChallenge = codeVerifier
 
     // Generate the Facebook OAuth URL server-side
     const params = new URLSearchParams({
@@ -44,7 +44,7 @@ const FacebookAuth = () => {
       scope: "openid",
       response_type: "code",
       redirect_uri: redirectURI,
-      state: state,
+      state: verifier,
       code_challenge: codeChallenge,
       code_challenge_method: codeChallengeMethod,
       nonce: nonce,

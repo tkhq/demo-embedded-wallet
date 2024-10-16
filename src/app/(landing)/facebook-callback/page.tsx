@@ -9,6 +9,7 @@ import { Loader } from "lucide-react"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Icons } from "@/components/icons"
 
+import { verifierSegmentToChallenge } from "../../../lib/facebook-utils"
 import { exchangeToken } from "./exchange-token"
 
 function FacebookProcessCallback() {
@@ -18,13 +19,12 @@ function FacebookProcessCallback() {
   const { loginWithFacebook } = useAuth()
 
   const [storedCode, setStoredCode] = useState<string | null>(null) // Store the token locally
+  const [storedState, setStoredState] = useState<string | null>(null) // Store the token locally
   const [hasLoggedIn, setHasLoggedIn] = useState(false) // Track if loginWithOAuth has been called
 
   const getToken = async () => {
-    const codeVerifier =
-      "lqRVABO1ifZALKrJ3VZAmASUzuulW7sLkfYVhpwlmwPVUPkPmbvkhBlP3t6TgPHlOr6lmbmSZBBz9L2QFRcmOZCVaSiQWZBRsRxn" // Replace with your generated code_challenge
-
-    const token = await exchangeToken(storedCode || "", codeVerifier)
+    const verifier = await verifierSegmentToChallenge(storedState || "")
+    const token = await exchangeToken(storedCode || "", verifier)
 
     console.log("got token!")
     console.log(token)
@@ -35,9 +35,12 @@ function FacebookProcessCallback() {
   // Get token from query string params and store in state when available
   useEffect(() => {
     const code = searchParams.get("code")
-    const verifier = searchParams.get("verifier")
+    const state = searchParams.get("state")
     if (code) {
       setStoredCode(code) // Store token if available
+    }
+    if (state) {
+      setStoredState(state) // Store token if available
     }
   }, [searchParams])
 
@@ -58,12 +61,18 @@ function FacebookProcessCallback() {
       }
     }
 
-    if (storedCode && authIframeClient?.iframePublicKey && !hasLoggedIn) {
+    if (
+      storedCode &&
+      storedState &&
+      authIframeClient?.iframePublicKey &&
+      !hasLoggedIn
+    ) {
       // Call the async handler to exchange the token
       handleTokenExchange()
     }
   }, [
     storedCode,
+    storedState,
     authIframeClient?.iframePublicKey,
     hasLoggedIn,
     loginWithFacebook,
