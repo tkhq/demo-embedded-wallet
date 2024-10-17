@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { SiFacebook } from "@icons-pack/react-simple-icons"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { sha256 } from "viem"
 
@@ -8,6 +9,7 @@ import { env } from "@/env.mjs"
 import { siteConfig } from "@/config/site"
 
 import { generateChallengePair } from "../lib/facebook-utils"
+import { Button } from "./ui/button"
 import { Skeleton } from "./ui/skeleton"
 
 const FacebookAuth = () => {
@@ -55,7 +57,14 @@ const FacebookAuth = () => {
     <>
       {nonce ? (
         <div className="flex w-full justify-center">
-          <button onClick={redirectToFacebook}>Login with Facebook</button>
+          <Button
+            variant="outline"
+            className="flex w-[235px] items-center justify-between"
+            onClick={redirectToFacebook}
+          >
+            <SiFacebook className="h-4 w-4 text-blue-600" />{" "}
+            <span className="flex-grow text-center">Sign in with Facebook</span>{" "}
+          </Button>
         </div>
       ) : (
         <Skeleton className="h-10 w-full" />
