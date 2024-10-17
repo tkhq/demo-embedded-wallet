@@ -2,7 +2,7 @@ import { vercel } from "@t3-oss/env-core/presets"
 import { createEnv } from "@t3-oss/env-nextjs"
 import { z } from "zod"
 
-export const env = createEnv({
+const env = createEnv({
   client: {
     NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
     NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID: z.string().min(1),
@@ -58,3 +58,14 @@ export const env = createEnv({
   },
   extends: [vercel()],
 })
+
+console.log("\nVercel Env:\n")
+Object.entries(env).forEach(([key, value], index, array) => {
+  if (key.startsWith("NEXT_PUBLIC_VERCEL_")) {
+    console.log(
+      `  - ${key}: "${value}"${index === array.length - 1 ? "\n" : ""}`
+    )
+  }
+})
+
+export { env }
