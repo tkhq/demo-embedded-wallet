@@ -9,7 +9,7 @@ import { Loader } from "lucide-react"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Icons } from "@/components/icons"
 
-import { verifierSegmentToChallenge } from "../../../lib/facebook-utils"
+import { verifierSegmentToChallenge } from "../../../../lib/facebook-utils"
 import { exchangeToken } from "./exchange-token"
 
 function FacebookProcessCallback() {
