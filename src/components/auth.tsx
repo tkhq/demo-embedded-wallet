@@ -22,6 +22,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
+import AppleAuth from "./apple-auth"
+import FacebookAuth from "./facebook-auth"
 import GoogleAuth from "./google-auth"
 import { Icons } from "./icons"
 import Legal from "./legal"
@@ -144,6 +146,8 @@ export default function Auth() {
             </div>
           </div>
           <GoogleAuth />
+          <AppleAuth />
+          <FacebookAuth />
         </CardContent>
       </Card>
       <Legal />
