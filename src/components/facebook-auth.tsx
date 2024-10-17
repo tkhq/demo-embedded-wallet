@@ -63,7 +63,9 @@ const FacebookAuth = () => {
             onClick={redirectToFacebook}
           >
             <SiFacebook className="h-4 w-4 text-blue-600" />{" "}
-            <span className="flex-grow text-center">Sign in with Facebook</span>{" "}
+            <span className="flex-grow text-center font-normal">
+              Sign in with Facebook
+            </span>{" "}
           </Button>
         </div>
       ) : (
