@@ -42,9 +42,16 @@ const AppleAuth = () => {
             nonce={nonce}
             responseMode="fragment"
             render={({ onClick }) => (
-              <Button variant="outline" onClick={onClick}>
-                <SiApple className="mr-2 h-4 w-4" />
-                Continue with Apple
+              <Button
+                variant="outline"
+                className="flex w-[235px] items-center justify-between"
+                onClick={onClick}
+              >
+                <SiApple className="h-4 w-4" /> {/* Icon on the left */}
+                <span className="flex-grow text-center">
+                  Sign in with Apple
+                </span>{" "}
+                {/* Text centered */}
               </Button>
             )}
           />

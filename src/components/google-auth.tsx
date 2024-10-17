@@ -42,12 +42,13 @@ const GoogleAuth = () => {
       {nonce ? (
         <GoogleLogin
           nonce={nonce}
-          width={182}
+          width={235}
           containerProps={{
             className: "w-full bg-white flex justify-center rounded-md",
           }}
           onSuccess={onSuccess}
           useOneTap={false}
+          auto_select={false}
         />
       ) : (
         <Skeleton className="h-10 w-full" />
