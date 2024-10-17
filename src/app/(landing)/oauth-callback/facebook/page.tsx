@@ -54,7 +54,7 @@ function FacebookProcessCallback() {
         // Set flag to prevent further calls
         setHasLoggedIn(true)
       } catch (error) {
-        console.error("Error during token exchange:", error)
+        throw new Error("Error during token exchange: " + error)
       }
     }
 
