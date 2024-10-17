@@ -47,11 +47,10 @@ const AppleAuth = () => {
                 className="flex w-[235px] items-center justify-between"
                 onClick={onClick}
               >
-                <SiApple className="h-4 w-4" /> {/* Icon on the left */}
+                <SiApple className="h-4 w-4" />
                 <span className="flex-grow text-center">
                   Sign in with Apple
                 </span>{" "}
-                {/* Text centered */}
               </Button>
             )}
           />

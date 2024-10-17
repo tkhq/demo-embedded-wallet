@@ -23,6 +23,5 @@ export const verifierSegmentToChallenge = async (
   const salt = env.FACEBOOK_SECRET_SALT
   const saltedVerifier = segment + salt
 
-  // Step 3: Hash the salted verifier using SHA-256
   return crypto.createHash("sha256").update(saltedVerifier).digest("base64url")
 }
