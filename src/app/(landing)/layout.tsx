@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { Toaster } from "sonner"
 
 import Features from "@/components/features"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -20,7 +21,10 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
         />
         <Features />
       </div>
-      <div className="flex items-center justify-center px-6">{children}</div>
+      <div className="flex items-center justify-center px-6">
+        {children}
+        <Toaster />
+      </div>
     </main>
   )
 }

@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import * as z from "zod"
 
 import { Email } from "@/types/turnkey"
@@ -32,12 +33,14 @@ const formSchema = z.object({
   email: z.string().email("Invalid email address"),
 })
 
-export default function Auth() {
+function AuthContent() {
   const { user } = useUser()
   const { passkeyClient } = useTurnkey()
   const { initEmailLogin, state, loginWithPasskey } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,6 +54,19 @@ export default function Auth() {
       router.push("/dashboard")
     }
   }, [user, router])
+
+  useEffect(() => {
+    const qsError = searchParams.get("error")
+    if (qsError) {
+      setError(qsError)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error)
+    }
+  }, [error])
 
   const handlePasskeyLogin = async (email: Email) => {
     setLoadingAction("passkey")
@@ -152,5 +168,13 @@ export default function Auth() {
       </Card>
       <Legal />
     </>
+  )
+}
+
+export default function Auth() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthContent />
+    </Suspense>
   )
 }

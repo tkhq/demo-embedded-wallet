@@ -21,6 +21,8 @@ const FacebookAuth = () => {
 
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
 
+  const authAPIVersion = env.NEXT_PUBLIC_FACEBOOK_AUTH_VERSION
+
   // Generate nonce based on iframePublicKey
   useEffect(() => {
     if (authIframeClient?.iframePublicKey) {
@@ -49,7 +51,7 @@ const FacebookAuth = () => {
       response_type: "code",
     } as any)
 
-    const facebookOAuthURL = `https://www.facebook.com/v11.0/dialog/oauth?${params.toString()}`
+    const facebookOAuthURL = `https://www.facebook.com/v${authAPIVersion}/dialog/oauth?${params.toString()}`
     window.location.href = facebookOAuthURL
   }
 

@@ -4,7 +4,8 @@ import { env } from "@/env.mjs"
 import { siteConfig } from "@/config/site"
 
 export async function exchangeToken(code: string, codeVerifier: string) {
-  const url = "https://graph.facebook.com/v21.0/oauth/access_token"
+  const graphAPIVersion = env.NEXT_PUBLIC_FACEBOOK_GRAPH_API_VERSION
+  const url = `https://graph.facebook.com/v${graphAPIVersion}/oauth/access_token`
 
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
   const redirectURI = `${siteConfig.url.base}/oauth-callback/facebook`
