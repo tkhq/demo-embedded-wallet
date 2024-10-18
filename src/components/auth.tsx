@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -33,7 +33,7 @@ const formSchema = z.object({
   email: z.string().email("Invalid email address"),
 })
 
-export default function Auth() {
+function AuthContent() {
   const { user } = useUser()
   const { passkeyClient } = useTurnkey()
   const { initEmailLogin, state, loginWithPasskey } = useAuth()
@@ -168,5 +168,13 @@ export default function Auth() {
       </Card>
       <Legal />
     </>
+  )
+}
+
+export default function Auth() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthContent />
+    </Suspense>
   )
 }
