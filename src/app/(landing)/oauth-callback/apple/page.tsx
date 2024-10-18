@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { Loader } from "lucide-react"
@@ -14,6 +14,7 @@ function OAuthProcessCallback() {
 
   const { authIframeClient } = useTurnkey()
   const { loginWithApple } = useAuth()
+  const router = useRouter()
 
   const [storedToken, setStoredToken] = useState<string | null>(null) // Store the token locally
   const [hasLoggedIn, setHasLoggedIn] = useState(false) // Track if loginWithOAuth has been called
@@ -33,11 +34,16 @@ function OAuthProcessCallback() {
   // Trigger loginWithOAuth when both token and iframePublicKey are available, but only once
   useEffect(() => {
     if (storedToken && authIframeClient?.iframePublicKey && !hasLoggedIn) {
-      // Call the OAuth login function with the stored token
-      loginWithApple(storedToken)
+      try {
+        // Call the OAuth login function with the stored token
+        loginWithApple(storedToken)
 
-      // Set flag to prevent further calls
-      setHasLoggedIn(true)
+        // Set flag to prevent further calls
+        setHasLoggedIn(true)
+      } catch (error) {
+        const msg = "Error logging in with Apple: " + error
+        router.push(`/?error=${encodeURIComponent(msg)}`)
+      }
     }
   }, [
     storedToken,
