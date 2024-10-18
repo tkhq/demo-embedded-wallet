@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import * as z from "zod"
 
 import { Email } from "@/types/turnkey"
@@ -22,6 +23,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
+import AppleAuth from "./apple-auth"
+import FacebookAuth from "./facebook-auth"
 import GoogleAuth from "./google-auth"
 import { Icons } from "./icons"
 import Legal from "./legal"
@@ -30,12 +33,13 @@ const formSchema = z.object({
   email: z.string().email("Invalid email address"),
 })
 
-export default function Auth() {
+function AuthContent() {
   const { user } = useUser()
   const { passkeyClient } = useTurnkey()
   const { initEmailLogin, state, loginWithPasskey } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,6 +53,13 @@ export default function Auth() {
       router.push("/dashboard")
     }
   }, [user, router])
+
+  useEffect(() => {
+    const qsError = searchParams.get("error")
+    if (qsError) {
+      toast.error(qsError)
+    }
+  }, [searchParams])
 
   const handlePasskeyLogin = async (email: Email) => {
     setLoadingAction("passkey")
@@ -144,9 +155,19 @@ export default function Auth() {
             </div>
           </div>
           <GoogleAuth />
+          <AppleAuth />
+          <FacebookAuth />
         </CardContent>
       </Card>
       <Legal />
     </>
+  )
+}
+
+export default function Auth() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthContent />
+    </Suspense>
   )
 }
