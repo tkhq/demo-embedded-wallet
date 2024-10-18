@@ -25,9 +25,15 @@ function OAuthProcessCallback() {
     if (fragment) {
       const params = new URLSearchParams(fragment.slice(1)) // Remove the "#" and parse parameters
       const token = params.get("id_token")
-      if (token) {
-        setStoredToken(token) // Store token if available
+      if (!token) {
+        const msg = "Invalid redirect parameters"
+        router.push(`/?error=${encodeURIComponent(msg)}`)
+        return
       }
+      setStoredToken(token) // Store token if available
+    } else {
+      const msg = "Invalid redirect parameters"
+      router.push(`/?error=${encodeURIComponent(msg)}`)
     }
   }, [searchParams])
 
