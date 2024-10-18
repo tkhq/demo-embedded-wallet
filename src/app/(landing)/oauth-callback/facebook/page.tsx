@@ -49,7 +49,7 @@ function FacebookProcessCallback() {
     if (state) {
       setStoredState(state)
     }
-  }, [searchParams])
+  }, [searchParams, router])
 
   // Trigger loginWithOAuth when both token and iframePublicKey are available, but only once
   useEffect(() => {
@@ -84,7 +84,9 @@ function FacebookProcessCallback() {
     authIframeClient?.iframePublicKey,
     hasLoggedIn,
     loginWithFacebook,
+    setHasLoggedIn,
     getToken,
+    router,
   ])
 
   return (
