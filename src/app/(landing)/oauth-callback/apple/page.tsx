@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { Loader } from "lucide-react"
@@ -10,8 +10,6 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Icons } from "@/components/icons"
 
 function OAuthProcessCallback() {
-  const searchParams = useSearchParams()
-
   const { authIframeClient } = useTurnkey()
   const { loginWithApple } = useAuth()
   const router = useRouter()
@@ -35,7 +33,7 @@ function OAuthProcessCallback() {
       const msg = "Invalid redirect parameters"
       router.push(`/?error=${encodeURIComponent(msg)}`)
     }
-  }, [searchParams])
+  }, [router])
 
   // Trigger loginWithOAuth when both token and iframePublicKey are available, but only once
   useEffect(() => {
