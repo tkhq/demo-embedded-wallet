@@ -38,7 +38,6 @@ function AuthContent() {
   const { passkeyClient } = useTurnkey()
   const { initEmailLogin, state, loginWithPasskey } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -58,15 +57,9 @@ function AuthContent() {
   useEffect(() => {
     const qsError = searchParams.get("error")
     if (qsError) {
-      setError(qsError)
+      toast.error(qsError)
     }
   }, [searchParams])
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error)
-    }
-  }, [error])
 
   const handlePasskeyLogin = async (email: Email) => {
     setLoadingAction("passkey")
