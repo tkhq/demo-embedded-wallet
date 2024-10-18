@@ -92,9 +92,15 @@ dependencies:
   react:
     specifier: ^18.3.1
     version: 18.3.1
+  react-apple-login:
+    specifier: ^1.1.6
+    version: 1.1.6(prop-types@15.8.1)(react-dom@18.3.1)(react@18.3.1)
   react-dom:
     specifier: ^18.3.1
     version: 18.3.1(react@18.3.1)
+  react-facebook-login:
+    specifier: ^4.1.1
+    version: 4.1.1(react@18.3.1)
   react-hook-form:
     specifier: ^7.53.0
     version: 7.53.0(react@18.3.1)
@@ -8290,6 +8296,19 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
+  /react-apple-login@1.1.6(prop-types@15.8.1)(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-ySV6ax0aB+ksA7lKzhr4MvsgjwSH068VtdHJXS+7rL380IJnNQNl14SszR31k3UqB8q8C1H1oyjJFGq4MyO6tw==}
+    engines: {node: '>=8', npm: '>=5'}
+    peerDependencies:
+      prop-types: ^15.5.4
+      react: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      prop-types: 15.8.1
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    dev: false
+
   /react-devtools-core@5.3.1:
     resolution: {integrity: sha512-7FSb9meX0btdBQLwdFOwt6bGqvRPabmVMMslv8fgoSPqXyuGpgQe36kx8gR86XPw7aV1yVouTp6fyZ0EH+NfUw==}
     dependencies:
@@ -8308,6 +8327,14 @@ packages:
       loose-envify: 1.4.0
       react: 18.3.1
       scheduler: 0.23.2
+    dev: false
+
+  /react-facebook-login@4.1.1(react@18.3.1):
+    resolution: {integrity: sha512-COnHEHlYGTKipz4963safFAK9PaNTcCiXfPXMS/yxo8El+/AJL5ye8kMJf23lKSSGGPgqFQuInskIHVqGqTvSw==}
+    peerDependencies:
+      react: ^16.0.0
+    dependencies:
+      react: 18.3.1
     dev: false
 
   /react-hook-form@7.53.0(react@18.3.1):
