@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { Loader } from "lucide-react"
@@ -22,6 +22,8 @@ function FacebookProcessCallback() {
   const [storedState, setStoredState] = useState<string | null>(null)
   const [hasLoggedIn, setHasLoggedIn] = useState(false)
 
+  const router = useRouter()
+
   const getToken = async () => {
     const verifier = await verifierSegmentToChallenge(storedState || "")
     const token = await exchangeToken(storedCode || "", verifier)
@@ -33,6 +35,14 @@ function FacebookProcessCallback() {
   useEffect(() => {
     const code = searchParams.get("code")
     const state = searchParams.get("state")
+    if (!code && !state) {
+      const inheretedError = searchParams.get("error")
+      let error = "Invalid redirect parameters"
+      if (inheretedError) {
+        error = "Facebook failed with error: " + error
+      }
+      router.push(`/?error=${encodeURIComponent(error)}`)
+    }
     if (code) {
       setStoredCode(code)
     }
@@ -54,7 +64,8 @@ function FacebookProcessCallback() {
         // Set flag to prevent further calls
         setHasLoggedIn(true)
       } catch (error) {
-        throw new Error("Error during token exchange: " + error)
+        const msg = `"Error during token exchange: ${error}`
+        router.push(`/?error=${encodeURIComponent(msg)}`)
       }
     }
 
