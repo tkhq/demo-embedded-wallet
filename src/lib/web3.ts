@@ -124,6 +124,8 @@ export const watchPendingTransactions = (
 }
 
 export const fundWallet = async (address: Address) => {
+  const fundingAmountText = "0.01 ETH"
+
   try {
     const publicClient = getPublicClient()
     const hash = await serverFundWallet(address)
@@ -135,7 +137,7 @@ export const fundWallet = async (address: Address) => {
     const toastId = showTransactionToast({
       hash,
       title: "Funding wallet...",
-      description: `Sending 0.01 ETH to ${truncateAddress(address)}`,
+      description: `Sending ${fundingAmountText} to ${truncateAddress(address)}`,
       type: "loading",
     })
 
@@ -147,17 +149,18 @@ export const fundWallet = async (address: Address) => {
       id: toastId,
       hash,
       title: "Funds received! 🎉",
-      description: `Wallet funded with 0.01 ETH`,
+      description: `Wallet funded with ${fundingAmountText}`,
       type: "success",
     })
 
     return transaction
   } catch (error: unknown) {
-    console.error("Error sending funds:", error)
+    console.error("Error funding wallet:", error)
 
     showTransactionToast({
-      title: "Error sending funds",
-      description: "Please try again",
+      title: "Error funding wallet",
+      description:
+        "Please try again or use https://www.alchemy.com/faucets/ethereum-sepolia",
       type: "error",
     })
 
