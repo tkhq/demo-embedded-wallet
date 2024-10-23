@@ -361,7 +361,7 @@ export const fundWallet = async (address: Address) => {
   const { receivedTransactions } = await getTransactions(address)
   const balance = await getBalance(address)
 
-  if (receivedTransactions.length > 5 || balance > value * 2n) {
+  if (receivedTransactions.length >= 1) {
     return ""
   }
 
