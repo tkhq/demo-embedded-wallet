@@ -35,17 +35,16 @@ const FacebookAuth = () => {
   }, [authIframeClient?.iframePublicKey])
 
   const redirectToFacebook = async () => {
-    const { verifier, codeChallenge } = await generateChallengePair()
-
-    const codeChallengeMethod = "sha256"
+    const { nonce: verifierNonce, codeChallenge } =
+      await generateChallengePair()
 
     // Generate the Facebook OAuth URL server-side
     const params = new URLSearchParams({
       client_id: clientID,
       redirect_uri: redirectURI,
-      state: verifier,
+      state: verifierNonce,
       code_challenge: codeChallenge,
-      code_challenge_method: codeChallengeMethod,
+      code_challenge_method: "S256",
       nonce: nonce,
       scope: "openid",
       response_type: "code",
