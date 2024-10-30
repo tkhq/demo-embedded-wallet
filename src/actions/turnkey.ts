@@ -5,6 +5,11 @@ import {
   DEFAULT_ETHEREUM_ACCOUNTS,
   TurnkeyServerClient,
 } from "@turnkey/sdk-server"
+import {
+  SIGNATURE_SCHEME_TK_API_ED25519,
+  SIGNATURE_SCHEME_TK_API_SECP256K1,
+  WalletType,
+} from "@turnkey/wallet-stamper"
 import { decode, JwtPayload } from "jsonwebtoken"
 import { Address, getAddress, parseEther } from "viem"
 
@@ -94,6 +99,7 @@ export const createUserSubOrg = async ({
   email,
   passkey,
   oauth,
+  wallet,
 }: {
   email?: Email
   passkey?: {
@@ -101,6 +107,10 @@ export const createUserSubOrg = async ({
     attestation: Attestation
   }
   oauth?: OauthProviderParams
+  wallet?: {
+    publicKey: string
+    type: WalletType
+  }
 }) => {
   const authenticators = passkey
     ? [
@@ -117,6 +127,19 @@ export const createUserSubOrg = async ({
         {
           providerName: oauth.providerName,
           oidcToken: oauth.oidcToken,
+        },
+      ]
+    : []
+
+  const apiKeys = wallet
+    ? [
+        {
+          apiKeyName: "Wallet Auth - Embedded Wallet",
+          publicKey: wallet.publicKey,
+          curveType:
+            wallet.type === WalletType.Ethereum
+              ? ("API_KEY_CURVE_SECP256K1" as const)
+              : ("API_KEY_CURVE_ED25519" as const),
         },
       ]
     : []
@@ -142,7 +165,7 @@ export const createUserSubOrg = async ({
         userEmail,
         oauthProviders,
         authenticators,
-        apiKeys: [],
+        apiKeys,
       },
     ],
     rootQuorumThreshold: 1,
@@ -366,7 +389,7 @@ export const fundWallet = async (address: Address) => {
   }
 
   const walletClient = await getTurnkeyWalletClient(
-    warchestClient,
+    warchestClient as TurnkeyServerClient,
     WARCHEST_PRIVATE_KEY_ID
   )
 

@@ -50,21 +50,27 @@ dependencies:
   '@turnkey/crypto':
     specifier: ^1.0.0
     version: 1.0.0(@babel/core@7.25.2)(@babel/preset-env@7.25.4)(@types/react@18.3.1)(react@18.3.1)
+  '@turnkey/encoding':
+    specifier: ^0.4.0
+    version: 0.4.0
   '@turnkey/http':
     specifier: ^2.14.1
     version: 2.14.1
   '@turnkey/sdk-browser':
-    specifier: ^1.7.0
-    version: 1.7.0(@babel/core@7.25.2)(@babel/preset-env@7.25.4)(@types/react@18.3.1)(react@18.3.1)
+    specifier: link:../sdk/packages/sdk-browser
+    version: link:../sdk/packages/sdk-browser
   '@turnkey/sdk-react':
-    specifier: ^1.0.11
-    version: 1.0.11(@babel/core@7.25.2)(@babel/preset-env@7.25.4)(@types/react@18.3.1)(react@18.3.1)
+    specifier: link:../sdk/packages/sdk-react
+    version: link:../sdk/packages/sdk-react
   '@turnkey/sdk-server':
     specifier: ^1.4.1
     version: 1.4.1
   '@turnkey/viem':
     specifier: ^0.6.0
     version: 0.6.0(@babel/core@7.25.2)(@babel/preset-env@7.25.4)(@types/react@18.3.1)(react@18.3.1)(viem@2.20.0)
+  '@turnkey/wallet-stamper':
+    specifier: link:../sdk/packages/wallet-stamper
+    version: link:../sdk/packages/wallet-stamper
   '@types/jsonwebtoken':
     specifier: ^9.0.7
     version: 9.0.7
@@ -4248,6 +4254,11 @@ packages:
     engines: {node: '>=18.0.0'}
     dev: false
 
+  /@turnkey/encoding@0.4.0:
+    resolution: {integrity: sha512-ptLgcpWVt34KTPx0omF2QLJrosW6I//clCJ4G2+yngYFCzrdR0yBchV/BOcfME67mK1v3MmauyXl9AAnQTmB4Q==}
+    engines: {node: '>=18.0.0'}
+    dev: false
+
   /@turnkey/http@2.14.1:
     resolution: {integrity: sha512-OfjpXsECG6V22BClAt/KJ3k/oCRakDLVyRtZDgnpKvtfDfIfNLmhngSogJNBVE/wP5VFRpJeh6PZMr1rro7YrA==}
     engines: {node: '>=16.0.0'}
@@ -4287,24 +4298,6 @@ packages:
       - bufferutil
       - encoding
       - react
-      - supports-color
-      - utf-8-validate
-    dev: false
-
-  /@turnkey/sdk-react@1.0.11(@babel/core@7.25.2)(@babel/preset-env@7.25.4)(@types/react@18.3.1)(react@18.3.1):
-    resolution: {integrity: sha512-I6eMq63GX+wOdIHdlVCaF0585wAOWpyVeA2VPUoaGjDRdvvdxkJh2w1qEC43v7C8jUhA7hxC4HYEIAPTIVSQ3A==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0
-    dependencies:
-      '@turnkey/sdk-browser': 1.7.0(@babel/core@7.25.2)(@babel/preset-env@7.25.4)(@types/react@18.3.1)(react@18.3.1)
-      react: 18.3.1
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/preset-env'
-      - '@types/react'
-      - bufferutil
-      - encoding
       - supports-color
       - utf-8-validate
     dev: false

@@ -1,7 +1,9 @@
 import { fundWallet as serverFundWallet } from "@/actions/turnkey"
+import { compressRawPublicKey } from "@turnkey/crypto"
 import { TurnkeyBrowserClient } from "@turnkey/sdk-browser"
 import { TurnkeyServerClient } from "@turnkey/sdk-server"
 import { createAccount } from "@turnkey/viem"
+import { WalletInterface } from "@turnkey/wallet-stamper"
 import {
   Alchemy,
   AlchemyMinedTransactionsAddress,
@@ -14,10 +16,16 @@ import {
   Address,
   createPublicClient,
   createWalletClient,
+  custom,
   getAddress,
+  hashMessage,
+  Hex,
   http,
+  keccak256,
   parseEther,
   PublicClient,
+  recoverPublicKey,
+  toHex,
   webSocket,
 } from "viem"
 import { sepolia } from "viem/chains"
@@ -246,6 +254,7 @@ export const getTurnkeyWalletClient = async (
 ) => {
   // Create a new account using the provided Turnkey client and the specified account for signing
   const turnkeyAccount = await createAccount({
+    // @ts-ignore - need to reconcile the TurnkeySDKClientConfig type between the sdk-server & sdk-browser SDKw
     client: turnkeyClient,
     organizationId: process.env.ORGANIZATION_ID!,
     signWith,
@@ -259,4 +268,47 @@ export const getTurnkeyWalletClient = async (
   })
 
   return client
+}
+
+let wallet: WalletInterface
+
+export const getWallet = () => {
+  if (!wallet && window.ethereum) {
+    const signMessage = async (message: string) => {
+      // Request accounts from the user
+      const [account] = await window.ethereum!.request({
+        method: "eth_requestAccounts",
+      })
+      const hashedMessage = keccak256(toHex(message))
+      const signature = (await window.ethereum!.request({
+        method: "personal_sign",
+        // @ts-ignore
+        params: [message, account],
+      })) as string
+      console.log("signature", signature)
+
+      return signature
+    }
+    const getPublicKey = async () => {
+      const arbitraryMessage = "getPublicKey"
+      const signature = await signMessage(arbitraryMessage)
+
+      const secp256k1PublicKey = await recoverPublicKey({
+        hash: keccak256(toHex(arbitraryMessage)),
+        signature: signature as Hex,
+      })
+      const publicKey = secp256k1PublicKey.replace("0x", "")
+      const publicKeyBytes = Uint8Array.from(Buffer.from(publicKey, "hex"))
+      const compressedPublicKey = Buffer.from(
+        compressRawPublicKey(publicKeyBytes)
+      ).toString("hex")
+      return compressedPublicKey
+    }
+    wallet = {
+      type: "evm",
+      signMessage,
+      getPublicKey,
+    }
+  }
+  return wallet
 }
