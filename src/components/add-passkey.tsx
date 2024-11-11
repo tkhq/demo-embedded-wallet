@@ -19,7 +19,7 @@ export default function AddPasskey({
 }: {
   onPasskeyAdded: (authenticatorId: string) => void
 }) {
-  const { passkeyClient, getActiveClient } = useTurnkey()
+  const { passkeyClient, client } = useTurnkey()
   const { user } = useUser()
   const [open, setOpen] = useState(false)
   const [passkeyName, setPasskeyName] = useState("")
@@ -28,8 +28,6 @@ export default function AddPasskey({
     if (!user) {
       return
     }
-
-    const activeClient = await getActiveClient()
 
     const credential = await passkeyClient?.createUserPasskey({
       publicKey: {
@@ -44,7 +42,7 @@ export default function AddPasskey({
     })
 
     if (credential) {
-      const authenticatorsResponse = await activeClient?.createAuthenticators({
+      const authenticatorsResponse = await client?.createAuthenticators({
         authenticators: [
           {
             authenticatorName: passkeyName,

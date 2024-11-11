@@ -31,7 +31,7 @@ export const loginResponseToUser = (
     session?: string
     sessionExpiry?: string
   },
-  authenticatedClient: AuthClient
+  authClient: AuthClient
 ): User => {
   const subOrganization = {
     organizationId: loginResponse.organizationId,
@@ -52,7 +52,7 @@ export const loginResponseToUser = (
     organization: subOrganization,
     session: {
       read,
-      authenticatedClient,
+      authClient,
     },
   }
 }
@@ -266,7 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       console.log("loginWithWallet - walletClient", walletClient)
-      const publicKey = (await walletClient?.getPublicKey())?.replace("0x", "")
+      const publicKey = await walletClient?.getPublicKey()
       console.log("loginWithWallet publicKey", publicKey)
       if (!publicKey) {
         throw new Error("No public key found")
@@ -274,22 +274,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Try and get the suborg id given the user's wallet public key
       const subOrgId = await getSubOrgIdByPublicKey(publicKey)
-      console.log("loginWithWallet subOrgId", subOrgId)
+      // console.log("loginWithWallet subOrgId", subOrgId)
       // If the user has a suborg id, use the oauth flow to login
       if (subOrgId) {
+        walletClient
+          ?.login({ organizationId: subOrgId })
+          .then((response) => console.log("Response:", response))
+          .catch((error) => console.error("Error:", error))
+
         const loginResponse = await walletClient?.login({
           organizationId: subOrgId,
         })
-        console.log("loginWithWallet loginResponse", loginResponse)
+
+        if (loginResponse?.organizationId) {
+          const user = loginResponseToUser(loginResponse, AuthClient.Wallet)
+          // Save the user in localStorage
+          await setStorageValue(StorageKeys.UserSession, user)
+
+          router.push("/dashboard")
+        }
       } else {
         // If the user does not have a suborg id, create a new suborg for the user
-        const { subOrg } = await createUserSubOrg({
+        const { subOrg, user } = await createUserSubOrg({
           wallet: {
             publicKey: publicKey,
             type: WalletType.Ethereum,
           },
         })
-        console.log("loginWithWallet subOrg", subOrg)
+
+        if (subOrg && user) {
+          await setStorageValue(
+            StorageKeys.UserSession,
+            loginResponseToUser(
+              {
+                userId: user.userId,
+                username: user.userName,
+                organizationId: subOrg.subOrganizationId,
+                organizationName: "",
+                session: undefined,
+                sessionExpiry: undefined,
+              },
+              AuthClient.Passkey
+            )
+          )
+
+          router.push("/dashboard")
+        }
       }
     } catch (error: any) {
       dispatch({ type: "ERROR", payload: error.message })

@@ -5,11 +5,7 @@ import {
   DEFAULT_ETHEREUM_ACCOUNTS,
   TurnkeyServerClient,
 } from "@turnkey/sdk-server"
-import {
-  SIGNATURE_SCHEME_TK_API_ED25519,
-  SIGNATURE_SCHEME_TK_API_SECP256K1,
-  WalletType,
-} from "@turnkey/wallet-stamper"
+import { WalletType } from "@turnkey/wallet-stamper"
 import { decode, JwtPayload } from "jsonwebtoken"
 import { Address, getAddress, parseEther } from "viem"
 
