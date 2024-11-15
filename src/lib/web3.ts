@@ -19,6 +19,7 @@ import {
   http,
   parseEther,
   PublicClient,
+  WalletClient,
   webSocket,
 } from "viem"
 import { sepolia } from "viem/chains"
@@ -261,4 +262,22 @@ export const getTurnkeyWalletClient = async (
   })
 
   return client
+}
+let injectedClient: WalletClient
+export const getInjectedWalletClient = async (signWith: string) => {
+  if (!injectedClient) {
+    const [account] = await window.ethereum!.request({
+      method: "eth_requestAccounts",
+    })
+
+    const client = createWalletClient({
+      account,
+      chain: sepolia,
+      transport: http(),
+    })
+
+    injectedClient = client
+  }
+
+  return injectedClient
 }

@@ -274,14 +274,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Try and get the suborg id given the user's wallet public key
       const subOrgId = await getSubOrgIdByPublicKey(publicKey)
-      // console.log("loginWithWallet subOrgId", subOrgId)
+      console.log("loginWithWallet subOrgId", subOrgId)
       // If the user has a suborg id, use the oauth flow to login
       if (subOrgId) {
-        walletClient
-          ?.login({ organizationId: subOrgId })
-          .then((response) => console.log("Response:", response))
-          .catch((error) => console.error("Error:", error))
-
         const loginResponse = await walletClient?.login({
           organizationId: subOrgId,
         })
@@ -303,6 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
 
         if (subOrg && user) {
+          console.log("new subOrg.id", subOrg.subOrganizationId)
           await setStorageValue(
             StorageKeys.UserSession,
             loginResponseToUser(

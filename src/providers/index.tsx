@@ -16,7 +16,8 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({
   <ThemeProvider
     attribute="class"
     defaultTheme="light"
-    enableSystem
+    forcedTheme="light"
+    enableSystem={false}
     disableTransitionOnChange
   >
     <TurnkeyProvider
