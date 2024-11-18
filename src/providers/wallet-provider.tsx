@@ -3,6 +3,7 @@
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useReducer,
@@ -130,7 +131,7 @@ async function getWalletsWithAccounts(
               ...account,
               address: getAddress(address),
               // Balance is initialized to undefined so that it can be fetched lazily on account selection
-              balance: undefined,
+              balance: await getBalance(getAddress(address)),
             })
           }
           return acc
@@ -148,7 +149,7 @@ async function getWalletsWithAccounts(
 // the wallet name
 export function WalletsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(walletsReducer, initialState)
-  const { getActiveClient, passkeyClient, turnkey } = useTurnkey()
+  const { client, turnkey } = useTurnkey()
   const { user } = useUser()
   const [preferredWallet, setPreferredWallet] =
     useLocalStorage<PreferredWallet>(PREFERRED_WALLET_KEY, {
@@ -213,7 +214,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       }
     }
     fetchWallets()
-  }, [getActiveClient, user])
+  }, [user, turnkey])
 
   useEffect(() => {
     if (state.selectedWallet) {
@@ -224,13 +225,12 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const newWalletAccount = async () => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      const activeClient = await getActiveClient()
-      if (state.selectedWallet && activeClient) {
+      if (state.selectedWallet && client) {
         const newAccount = defaultEthereumAccountAtIndex(
           state.selectedWallet.accounts.length + 1
         )
 
-        const response = await activeClient.createWalletAccounts({
+        const response = await client.createWalletAccounts({
           walletId: state.selectedWallet.walletId,
           accounts: [newAccount],
         })
@@ -269,9 +269,8 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const newWallet = async (walletName?: string) => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      const activeClient = await getActiveClient()
-      if (activeClient) {
-        const { walletId } = await activeClient.createWallet({
+      if (client) {
+        const { walletId } = await client.createWallet({
           walletName: walletName || "New Wallet",
           accounts: DEFAULT_ETHEREUM_ACCOUNTS,
         })
@@ -300,7 +299,10 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
 
   const selectAccount = async (account: Account) => {
     const balance = await getBalance(account.address)
-    dispatch({ type: "SET_SELECTED_ACCOUNT", payload: { ...account, balance } })
+    dispatch({
+      type: "SET_SELECTED_ACCOUNT",
+      payload: { ...account, balance },
+    })
   }
 
   const value = {

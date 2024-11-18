@@ -171,9 +171,12 @@ export const fundWallet = async (address: Address) => {
 }
 
 export const getBalance = async (address: Address) => {
-  let response = await alchemy.core.getBalance(address, "latest")
-  const balanceBigInt = BigInt(response.toString())
-  return balanceBigInt
+  const publicClient = getPublicClient()
+  const balance = await publicClient.getBalance({
+    address,
+  })
+
+  return balance
 }
 
 export const getTransactions = async (
@@ -263,6 +266,7 @@ export const getTurnkeyWalletClient = async (
 
   return client
 }
+
 let injectedClient: WalletClient
 export const getInjectedWalletClient = async (signWith: string) => {
   if (!injectedClient) {

@@ -12,6 +12,7 @@ import {
   SettingsIcon,
 } from "lucide-react"
 import Jazzicon, { jsNumberForAddress } from "react-jazzicon"
+import { formatEther } from "viem"
 
 import { truncateAddress } from "@/lib/utils"
 import { useUser } from "@/hooks/use-user"
@@ -195,9 +196,23 @@ export default function Account() {
             key={account.address}
             checked={selectedAccount?.address === account.address}
             onCheckedChange={() => selectAccount(account)}
-            className="flex items-center py-2"
+            className="flex items-center justify-between py-2"
           >
-            {account.address ? truncateAddress(account.address) : ""}
+            <span>
+              {account.address ? truncateAddress(account.address) : ""}
+            </span>
+
+            <div className="flex items-center gap-1 rounded-full bg-muted-foreground/10 px-2 py-0.5">
+              <span className="text-sm font-semibold">
+                <span className="font-semibold text-muted-foreground">~</span>
+                {account.balance
+                  ? Number(formatEther(account.balance)).toFixed(2)
+                  : "0"}
+                <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                  ETH
+                </span>
+              </span>
+            </div>
           </DropdownMenuCheckboxItem>
         ))}
 

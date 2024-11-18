@@ -20,7 +20,7 @@ import { siteConfig } from "@/config/site"
 import { turnkeyConfig } from "@/config/turnkey"
 import { getTurnkeyWalletClient } from "@/lib/web3"
 
-import { getBalance, getTransactions } from "./web3"
+import { getTransactions } from "./web3"
 
 const {
   TURNKEY_API_PUBLIC_KEY,
@@ -378,7 +378,6 @@ const warchestClient = new TurnkeyServerClient({
 export const fundWallet = async (address: Address) => {
   const value = parseEther("0.01")
   const { receivedTransactions } = await getTransactions(address)
-  const balance = await getBalance(address)
 
   if (receivedTransactions.length >= 1) {
     return ""

@@ -130,13 +130,8 @@ const AuthContext = createContext<{
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
-  const {
-    turnkey,
-    authIframeClient,
-    passkeyClient,
-    walletClient,
-    getActiveClient,
-  } = useTurnkey()
+  const { turnkey, authIframeClient, passkeyClient, walletClient } =
+    useTurnkey()
 
   const initEmailLogin = async (email: Email) => {
     dispatch({ type: "LOADING", payload: true })
