@@ -97,7 +97,6 @@ export default function TransferDialog() {
         client,
         selectedAccount.address
       )
-      console.log("walletClient", walletClient)
       setWalletClient(walletClient)
     }
 

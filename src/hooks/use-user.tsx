@@ -15,7 +15,7 @@ export const useUser = () => {
       if (turnkey) {
         // Try and get the current user
         const currentUser = await turnkey.getCurrentUser()
-        console.log("currentUser", currentUser)
+
         // If the user is not found, we assume the user is not logged in
         if (!currentUser) {
           router.push("/")
