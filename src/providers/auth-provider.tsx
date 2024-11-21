@@ -276,10 +276,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })
 
         if (loginResponse?.organizationId) {
-          const user = loginResponseToUser(loginResponse, AuthClient.Wallet)
-          // Save the user in localStorage
-          await setStorageValue(StorageKeys.UserSession, user)
-
           router.push("/dashboard")
         }
       } else {
@@ -303,7 +299,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 session: undefined,
                 sessionExpiry: undefined,
               },
-              AuthClient.Passkey
+              AuthClient.Wallet
             )
           )
 
