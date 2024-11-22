@@ -36,7 +36,7 @@ const formSchema = z.object({
 function AuthContent() {
   const { user } = useUser()
   const { passkeyClient } = useTurnkey()
-  const { initEmailLogin, state, loginWithPasskey } = useAuth()
+  const { initEmailLogin, state, loginWithPasskey, loginWithWallet } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -141,6 +141,15 @@ function AuthContent() {
                 loading={state.loading && loadingAction === "email"}
               >
                 Continue with email
+              </LoadingButton>
+              <LoadingButton
+                type="button"
+                variant="outline"
+                className="w-full font-semibold"
+                onClick={() => loginWithWallet()}
+                loading={state.loading && loadingAction === "wallet"}
+              >
+                Continue with wallet
               </LoadingButton>
             </form>
           </Form>

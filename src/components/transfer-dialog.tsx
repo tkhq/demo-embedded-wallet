@@ -13,7 +13,7 @@ import {
   CopyIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
-import { useMediaQuery } from "usehooks-ts"
+import { useIsClient, useMediaQuery } from "usehooks-ts"
 import { formatEther, getAddress, parseEther, TransactionRequest } from "viem"
 
 import { showTransactionToast } from "@/lib/toast"
@@ -52,9 +52,10 @@ export default function TransferDialog() {
   const { state } = useWallets()
   const { selectedAccount } = state
   const { ethPrice } = useTokenPrice()
-  const { getActiveClient } = useTurnkey()
+  const { client } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
   const isDesktop = useMediaQuery("(min-width: 564px)")
+  const isClient = useIsClient()
 
   // Controls the dialog open/close state
   const [isOpen, setIsOpen] = useState(false)
@@ -90,19 +91,17 @@ export default function TransferDialog() {
 
   useEffect(() => {
     const initializeWalletClient = async () => {
-      if (!selectedAccount) return
-      const turnkeyClient = await getActiveClient()
-      if (!turnkeyClient) return
+      if (!selectedAccount || !client) return
 
-      const client = await getTurnkeyWalletClient(
-        turnkeyClient,
+      const walletClient = await getTurnkeyWalletClient(
+        client,
         selectedAccount.address
       )
-      setWalletClient(client)
+      setWalletClient(walletClient)
     }
 
     initializeWalletClient()
-  }, [selectedAccount, getActiveClient])
+  }, [selectedAccount, client])
 
   useEffect(() => {
     const ethAmountParsed = parseFloat(ethAmount || "0")
@@ -355,6 +354,11 @@ export default function TransferDialog() {
     </Card>
   )
 
+  // Prevents hydration errors
+  if (!isClient) {
+    return null
+  }
+
   if (isDesktop) {
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -428,55 +432,4 @@ export default function TransferDialog() {
       </DrawerContent>
     </Drawer>
   )
-
-  // return (
-  //   <Dialog open={isOpen} onOpenChange={setIsOpen}>
-  //     <div className=" flex items-center justify-center gap-2">
-  //       <Button onClick={() => handleSelect("send")} variant="secondary">
-  //         <ArrowUp className="mr-2 h-4 w-4" />
-  //         Send
-  //       </Button>
-  //       <Button onClick={() => handleSelect("receive")} variant="secondary">
-  //         <ArrowDown className="mr-2 h-4 w-4" />
-  //         Receive
-  //       </Button>
-  //     </div>
-  //     <DialogContent className="p-4 sm:max-w-[480px]">
-  //       <DialogTitle className="sr-only">Transfer Dialog</DialogTitle>
-  //       <DialogDescription className="sr-only">
-  //         Send or receive ETH to your Turnkey wallet
-  //       </DialogDescription>
-  //       <Card className="w-full border-0  shadow-none">
-  //         <CardContent className="p-6">
-  //           {currentView === "send" && (
-  //             <Tabs defaultValue={selectedAction} className="w-full">
-  //               <TabsList className="mb-6 grid w-full grid-cols-2 ">
-  //                 <TabsTrigger value="send">Send</TabsTrigger>
-  //                 <TabsTrigger value="receive">Receive</TabsTrigger>
-  //               </TabsList>
-  //               <TabsContent value="send">
-  //                 <SendTab />
-  //               </TabsContent>
-  //               <TabsContent value="receive">
-  //                 <ReceiveTab />
-  //               </TabsContent>
-  //             </Tabs>
-  //           )}
-  //           {currentView === "sendTransaction" &&
-  //             transactionRequest &&
-  //             ethPrice && (
-  //               <SendTransaction
-  //                 transaction={transactionRequest}
-  //                 amountUSD={amountUSD}
-  //                 ethPrice={ethPrice}
-  //                 network="Ethereum"
-  //                 onSend={handleSendTransaction}
-  //                 onBack={handleBackToSendTab}
-  //               />
-  //             )}
-  //         </CardContent>
-  //       </Card>
-  //     </DialogContent>
-  //   </Dialog>
-  // )
 }

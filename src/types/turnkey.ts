@@ -8,7 +8,7 @@ export type Email = `${string}@${string}.${string}`
 
 export type Account = Omit<
   TurnkeyApiTypes["v1GetWalletAccountsResponse"]["accounts"][number],
-  "address"
+  "address" | "addressFormat"
 > & {
   address: Address
   balance: bigint | undefined

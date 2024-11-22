@@ -5,6 +5,7 @@ import {
   DEFAULT_ETHEREUM_ACCOUNTS,
   TurnkeyServerClient,
 } from "@turnkey/sdk-server"
+import { WalletType } from "@turnkey/wallet-stamper"
 import { decode, JwtPayload } from "jsonwebtoken"
 import { Address, getAddress, parseEther } from "viem"
 
@@ -19,7 +20,7 @@ import { siteConfig } from "@/config/site"
 import { turnkeyConfig } from "@/config/turnkey"
 import { getTurnkeyWalletClient } from "@/lib/web3"
 
-import { getBalance, getTransactions } from "./web3"
+import { getTransactions } from "./web3"
 
 const {
   TURNKEY_API_PUBLIC_KEY,
@@ -94,6 +95,7 @@ export const createUserSubOrg = async ({
   email,
   passkey,
   oauth,
+  wallet,
 }: {
   email?: Email
   passkey?: {
@@ -101,6 +103,10 @@ export const createUserSubOrg = async ({
     attestation: Attestation
   }
   oauth?: OauthProviderParams
+  wallet?: {
+    publicKey: string
+    type: WalletType
+  }
 }) => {
   const authenticators = passkey
     ? [
@@ -117,6 +123,19 @@ export const createUserSubOrg = async ({
         {
           providerName: oauth.providerName,
           oidcToken: oauth.oidcToken,
+        },
+      ]
+    : []
+
+  const apiKeys = wallet
+    ? [
+        {
+          apiKeyName: "Wallet Auth - Embedded Wallet",
+          publicKey: wallet.publicKey,
+          curveType:
+            wallet.type === WalletType.Ethereum
+              ? ("API_KEY_CURVE_SECP256K1" as const)
+              : ("API_KEY_CURVE_ED25519" as const),
         },
       ]
     : []
@@ -142,7 +161,7 @@ export const createUserSubOrg = async ({
         userEmail,
         oauthProviders,
         authenticators,
-        apiKeys: [],
+        apiKeys,
       },
     ],
     rootQuorumThreshold: 1,
@@ -359,14 +378,13 @@ const warchestClient = new TurnkeyServerClient({
 export const fundWallet = async (address: Address) => {
   const value = parseEther("0.01")
   const { receivedTransactions } = await getTransactions(address)
-  const balance = await getBalance(address)
 
   if (receivedTransactions.length >= 1) {
     return ""
   }
 
   const walletClient = await getTurnkeyWalletClient(
-    warchestClient,
+    warchestClient as TurnkeyServerClient,
     WARCHEST_PRIVATE_KEY_ID
   )
 

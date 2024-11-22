@@ -2,6 +2,7 @@ import { fundWallet as serverFundWallet } from "@/actions/turnkey"
 import { TurnkeyBrowserClient } from "@turnkey/sdk-browser"
 import { TurnkeyServerClient } from "@turnkey/sdk-server"
 import { createAccount } from "@turnkey/viem"
+import { WalletInterface } from "@turnkey/wallet-stamper"
 import {
   Alchemy,
   AlchemyMinedTransactionsAddress,
@@ -18,6 +19,7 @@ import {
   http,
   parseEther,
   PublicClient,
+  WalletClient,
   webSocket,
 } from "viem"
 import { sepolia } from "viem/chains"
@@ -169,9 +171,12 @@ export const fundWallet = async (address: Address) => {
 }
 
 export const getBalance = async (address: Address) => {
-  let response = await alchemy.core.getBalance(address, "latest")
-  const balanceBigInt = BigInt(response.toString())
-  return balanceBigInt
+  const publicClient = getPublicClient()
+  const balance = await publicClient.getBalance({
+    address,
+  })
+
+  return balance
 }
 
 export const getTransactions = async (
@@ -246,6 +251,7 @@ export const getTurnkeyWalletClient = async (
 ) => {
   // Create a new account using the provided Turnkey client and the specified account for signing
   const turnkeyAccount = await createAccount({
+    // @ts-ignore - need to reconcile the TurnkeySDKClientConfig type between the sdk-server & sdk-browser SDKw
     client: turnkeyClient,
     organizationId: process.env.ORGANIZATION_ID!,
     signWith,
@@ -259,4 +265,23 @@ export const getTurnkeyWalletClient = async (
   })
 
   return client
+}
+
+let injectedClient: WalletClient
+export const getInjectedWalletClient = async (signWith: string) => {
+  if (!injectedClient) {
+    const [account] = await window.ethereum!.request({
+      method: "eth_requestAccounts",
+    })
+
+    const client = createWalletClient({
+      account,
+      chain: sepolia,
+      transport: http(),
+    })
+
+    injectedClient = client
+  }
+
+  return injectedClient
 }

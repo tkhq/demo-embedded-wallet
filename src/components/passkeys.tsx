@@ -12,7 +12,7 @@ import AddPasskey from "./add-passkey"
 import { PasskeyItem } from "./passkey-item"
 
 export function Passkeys() {
-  const { getActiveClient } = useTurnkey()
+  const { client } = useTurnkey()
   const { user } = useUser()
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -30,8 +30,7 @@ export function Passkeys() {
   }, [user])
 
   const removeAuthenticator = async (authenticatorId: string) => {
-    const activeClient = await getActiveClient()
-    const authenticatorResponse = await activeClient?.deleteAuthenticators({
+    const authenticatorResponse = await client?.deleteAuthenticators({
       userId: `${user?.userId}`,
       authenticatorIds: [authenticatorId],
     })

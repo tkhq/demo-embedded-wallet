@@ -6,33 +6,43 @@ import {
   createUserSubOrg,
   getSubOrgId,
   getSubOrgIdByEmail,
+  getSubOrgIdByPublicKey,
   initEmailAuth,
   oauth,
 } from "@/actions/turnkey"
 import { googleLogout } from "@react-oauth/google"
-import { setStorageValue, StorageKeys } from "@turnkey/sdk-browser"
+import {
+  AuthClient,
+  ReadOnlySession,
+  setStorageValue,
+  StorageKeys,
+} from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
+import { WalletType } from "@turnkey/wallet-stamper"
 
-import { Email, ReadOnlySession, User } from "@/types/turnkey"
+import { Email, User } from "@/types/turnkey"
 
-export const loginResponseToUser = (loginResponse: {
-  organizationId: string
-  organizationName: string
-  userId: string
-  username: string
-  session?: string
-  sessionExpiry?: string
-}): User => {
+export const loginResponseToUser = (
+  loginResponse: {
+    organizationId: string
+    organizationName: string
+    userId: string
+    username: string
+    session?: string
+    sessionExpiry?: string
+  },
+  authClient: AuthClient
+): User => {
   const subOrganization = {
     organizationId: loginResponse.organizationId,
     organizationName: loginResponse.organizationName,
   }
 
-  let readOnlySession: ReadOnlySession | undefined
+  let read: ReadOnlySession | undefined
   if (loginResponse.session) {
-    readOnlySession = {
-      session: loginResponse.session,
-      sessionExpiry: Number(loginResponse.sessionExpiry),
+    read = {
+      token: loginResponse.session,
+      expiry: Number(loginResponse.sessionExpiry),
     }
   }
 
@@ -40,7 +50,10 @@ export const loginResponseToUser = (loginResponse: {
     userId: loginResponse.userId,
     username: loginResponse.username,
     organization: subOrganization,
-    readOnlySession,
+    session: {
+      read,
+      authClient,
+    },
   }
 }
 
@@ -95,6 +108,7 @@ const AuthContext = createContext<{
     credentialBundle: string
   }) => Promise<void>
   loginWithPasskey: (email?: Email) => Promise<void>
+  loginWithWallet: () => Promise<void>
   loginWithOAuth: (credential: string, providerName: string) => Promise<void>
   loginWithGoogle: (credential: string) => Promise<void>
   loginWithApple: (credential: string) => Promise<void>
@@ -105,6 +119,7 @@ const AuthContext = createContext<{
   initEmailLogin: async () => {},
   completeEmailAuth: async () => {},
   loginWithPasskey: async () => {},
+  loginWithWallet: async () => {},
   loginWithOAuth: async () => {},
   loginWithGoogle: async () => {},
   loginWithApple: async () => {},
@@ -115,7 +130,7 @@ const AuthContext = createContext<{
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
-  const { turnkey, authIframeClient, passkeyClient, getActiveClient } =
+  const { turnkey, authIframeClient, passkeyClient, walletClient } =
     useTurnkey()
 
   const initEmailLogin = async (email: Email) => {
@@ -157,15 +172,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               authIframeClient.iframePublicKey
             )
           if (loginResponse?.organizationId) {
+            const user = loginResponseToUser(loginResponse, AuthClient.Iframe)
             // Save the user in localStorage
-            await setStorageValue(
-              StorageKeys.CurrentUser,
-              loginResponseToUser(loginResponse)
-            )
+            await setStorageValue(StorageKeys.UserSession, user)
 
             dispatch({
               type: "COMPLETE_EMAIL_AUTH",
-              payload: loginResponseToUser(loginResponse),
+              payload: user,
             })
             router.push("/dashboard")
           }
@@ -188,7 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (loginResponse?.organizationId) {
           dispatch({
             type: "PASSKEY",
-            payload: loginResponseToUser(loginResponse),
+            payload: loginResponseToUser(loginResponse, AuthClient.Passkey),
           })
           router.push("/dashboard")
         }
@@ -217,21 +230,80 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           })
 
           if (subOrg && user) {
-            const org = {
-              organizationId: subOrg.subOrganizationId,
-              organizationName: "",
-            }
-            const currentUser: User = {
-              userId: user.userId,
-              username: user.userName,
-              organization: org,
-            }
-            localStorage.setItem(
-              "@turnkey/current_user",
-              JSON.stringify(currentUser)
+            await setStorageValue(
+              StorageKeys.UserSession,
+              loginResponseToUser(
+                {
+                  userId: user.userId,
+                  username: user.userName,
+                  organizationId: subOrg.subOrganizationId,
+                  organizationName: "",
+                  session: undefined,
+                  sessionExpiry: undefined,
+                },
+                AuthClient.Passkey
+              )
             )
+
             router.push("/dashboard")
           }
+        }
+      }
+    } catch (error: any) {
+      dispatch({ type: "ERROR", payload: error.message })
+    } finally {
+      dispatch({ type: "LOADING", payload: false })
+    }
+  }
+
+  const loginWithWallet = async () => {
+    dispatch({ type: "LOADING", payload: true })
+
+    try {
+      const publicKey = await walletClient?.getPublicKey()
+
+      if (!publicKey) {
+        throw new Error("No public key found")
+      }
+
+      // Try and get the suborg id given the user's wallet public key
+      const subOrgId = await getSubOrgIdByPublicKey(publicKey)
+
+      // If the user has a suborg id, use the oauth flow to login
+      if (subOrgId) {
+        const loginResponse = await walletClient?.login({
+          organizationId: subOrgId,
+        })
+
+        if (loginResponse?.organizationId) {
+          router.push("/dashboard")
+        }
+      } else {
+        // If the user does not have a suborg id, create a new suborg for the user
+        const { subOrg, user } = await createUserSubOrg({
+          wallet: {
+            publicKey: publicKey,
+            type: WalletType.Ethereum,
+          },
+        })
+
+        if (subOrg && user) {
+          await setStorageValue(
+            StorageKeys.UserSession,
+            loginResponseToUser(
+              {
+                userId: user.userId,
+                username: user.userName,
+                organizationId: subOrg.subOrganizationId,
+                organizationName: "",
+                session: undefined,
+                sessionExpiry: undefined,
+              },
+              AuthClient.Wallet
+            )
+          )
+
+          router.push("/dashboard")
         }
       }
     } catch (error: any) {
@@ -274,15 +346,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               authIframeClient.iframePublicKey
             )
           if (loginResponse?.organizationId) {
+            const user = loginResponseToUser(loginResponse, AuthClient.Iframe)
             // Save the user in localStorage
-            await setStorageValue(
-              StorageKeys.CurrentUser,
-              loginResponseToUser(loginResponse)
-            )
+            await setStorageValue(StorageKeys.UserSession, user)
 
             dispatch({
               type: "OAUTH",
-              payload: loginResponseToUser(loginResponse),
+              payload: user,
             })
             router.push("/dashboard")
           }
@@ -320,6 +390,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         initEmailLogin,
         completeEmailAuth,
         loginWithPasskey,
+        loginWithWallet,
         loginWithOAuth,
         loginWithGoogle,
         loginWithApple,

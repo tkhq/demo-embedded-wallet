@@ -28,7 +28,7 @@ export default function ExportWalletDialog({
 }) {
   const { state } = useWallets()
   const { selectedWallet, selectedAccount } = state
-  const { turnkey, getActiveClient } = useTurnkey()
+  const { turnkey, client } = useTurnkey()
   const { export: exportConfig } = turnkeyConfig.iFrame
   const [iframeClient, setIframeClient] = useState<TurnkeyIframeClient | null>(
     null
@@ -101,9 +101,7 @@ export default function ExportWalletDialog({
 
   const exportSeedPhrase = async () => {
     if (iframeClient && selectedWallet) {
-      const activeClient = await getActiveClient()
-
-      const exportResponse = await activeClient?.exportWallet({
+      const exportResponse = await client?.exportWallet({
         walletId: selectedWallet.walletId,
         targetPublicKey: `${iframeClient?.iframePublicKey}`,
       })
@@ -122,9 +120,7 @@ export default function ExportWalletDialog({
 
   const exportPrivateKey = async () => {
     if (iframeClient && selectedAccount) {
-      const activeClient = await getActiveClient()
-
-      const exportResponse = await activeClient?.exportWalletAccount({
+      const exportResponse = await client?.exportWalletAccount({
         address: selectedAccount.address,
         targetPublicKey: `${iframeClient?.iframePublicKey}`,
       })
@@ -142,7 +138,7 @@ export default function ExportWalletDialog({
 
   const displayError = (error: any) => {
     if (
-      error?.message.includes(
+      error?.message?.includes(
         "webauthn authenticator not found in organization"
       )
     ) {

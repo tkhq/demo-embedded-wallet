@@ -1,5 +1,7 @@
 import { Address, Hex } from "viem"
 
+import "viem/window"
+
 export interface Transaction {
   hash: string
   blockNumber: number | null
