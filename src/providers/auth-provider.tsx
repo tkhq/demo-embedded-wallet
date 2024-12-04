@@ -172,14 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               authIframeClient.iframePublicKey
             )
           if (loginResponse?.organizationId) {
-            const user = loginResponseToUser(loginResponse, AuthClient.Iframe)
-            // Save the user in localStorage
-            await setStorageValue(StorageKeys.UserSession, user)
-
-            dispatch({
-              type: "COMPLETE_EMAIL_AUTH",
-              payload: user,
-            })
             router.push("/dashboard")
           }
         }
@@ -346,14 +338,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               authIframeClient.iframePublicKey
             )
           if (loginResponse?.organizationId) {
-            const user = loginResponseToUser(loginResponse, AuthClient.Iframe)
-            // Save the user in localStorage
-            await setStorageValue(StorageKeys.UserSession, user)
-
-            dispatch({
-              type: "OAUTH",
-              payload: user,
-            })
             router.push("/dashboard")
           }
         }

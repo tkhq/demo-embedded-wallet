@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { TurnkeyBrowserClient } from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 
 import { Email, User } from "@/types/turnkey"
@@ -45,13 +44,5 @@ export const useUser = () => {
     fetchUser()
   }, [turnkey])
 
-  const logout = async () => {
-    if (turnkey) {
-      await turnkey.logoutUser()
-      setUser(undefined)
-      router.push("/")
-    }
-  }
-
-  return { user, logout }
+  return { user }
 }

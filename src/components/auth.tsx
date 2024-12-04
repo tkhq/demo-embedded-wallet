@@ -21,7 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import OrSeparator from "@/components/or-separator"
 
 import AppleAuth from "./apple-auth"
 import FacebookAuth from "./facebook-auth"
@@ -78,15 +78,10 @@ function AuthContent() {
     setLoadingAction(null)
   }
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const email = values.email as Email
-    if (state.loading) return
-
-    if (passkeyClient) {
-      await handlePasskeyLogin(email)
-    } else {
-      await handleEmailLogin(email)
-    }
+  const handleWalletLogin = async () => {
+    setLoadingAction("wallet")
+    await loginWithWallet()
+    setLoadingAction(null)
   }
 
   return (
@@ -100,7 +95,7 @@ function AuthContent() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(() => {})} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -142,27 +137,19 @@ function AuthContent() {
               >
                 Continue with email
               </LoadingButton>
+              <OrSeparator />
               <LoadingButton
                 type="button"
                 variant="outline"
                 className="w-full font-semibold"
-                onClick={() => loginWithWallet()}
+                onClick={() => handleWalletLogin()}
                 loading={state.loading && loadingAction === "wallet"}
               >
                 Continue with wallet
               </LoadingButton>
             </form>
           </Form>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or
-              </span>
-            </div>
-          </div>
+          <OrSeparator />
           <GoogleAuth />
           <AppleAuth />
           <FacebookAuth />
