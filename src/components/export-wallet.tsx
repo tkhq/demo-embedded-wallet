@@ -42,6 +42,19 @@ export default function ExportWalletDialog({
 
   useEffect(() => {
     if (isDialogOpen && turnkey) {
+      const initIframe = async () => {
+        if (iframeContainerRef.current) {
+          const iframeContainer = iframeContainerRef.current
+          const exportIframeClient = await turnkey?.iframeClient({
+            iframeContainer,
+            iframeUrl: exportConfig.url,
+          })
+          if (exportIframeClient) {
+            setIframeClient(exportIframeClient)
+          }
+        }
+      }
+
       // Create a MutationObserver to watch for changes in the DOM
       const observer = new MutationObserver(() => {
         // If the iframe container is found, initialize the iframe and stop observing
@@ -60,19 +73,6 @@ export default function ExportWalletDialog({
       return () => observer.disconnect()
     }
   }, [isDialogOpen, turnkey])
-
-  const initIframe = async () => {
-    if (iframeContainerRef.current) {
-      const iframeContainer = iframeContainerRef.current
-      const exportIframeClient = await turnkey?.iframeClient({
-        iframeContainer,
-        iframeUrl: exportConfig.url,
-      })
-      if (exportIframeClient) {
-        setIframeClient(exportIframeClient)
-      }
-    }
-  }
 
   const exportWallet = async () => {
     setError(null)

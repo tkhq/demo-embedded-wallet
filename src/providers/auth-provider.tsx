@@ -1,6 +1,13 @@
 "use client"
 
-import { createContext, ReactNode, useContext, useReducer } from "react"
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+} from "react"
 import { useRouter } from "next/navigation"
 import {
   createUserSubOrg,
@@ -66,17 +73,20 @@ type AuthActionType =
   | { type: "OAUTH"; payload: User }
   | { type: "LOADING"; payload: boolean }
   | { type: "ERROR"; payload: string }
+  | { type: "SESSION_EXPIRING"; payload: boolean }
 
 interface AuthState {
   loading: boolean
   error: string
   user: User | null
+  sessionExpiring: boolean
 }
 
 const initialState: AuthState = {
   loading: false,
   error: "",
   user: null,
+  sessionExpiring: false,
 }
 
 function authReducer(state: AuthState, action: AuthActionType): AuthState {
@@ -94,6 +104,8 @@ function authReducer(state: AuthState, action: AuthActionType): AuthState {
     case "WALLET_AUTH":
     case "OAUTH":
       return { ...state, user: action.payload, loading: false, error: "" }
+    case "SESSION_EXPIRING":
+      return { ...state, sessionExpiring: action.payload }
     default:
       return state
   }
@@ -127,11 +139,15 @@ const AuthContext = createContext<{
   logout: async () => {},
 })
 
+const SESSION_EXPIRY = "900" // This is in seconds
+const WARNING_BUFFER = 30 // seconds before expiry to show warning
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
   const { turnkey, authIframeClient, passkeyClient, walletClient } =
     useTurnkey()
+  const warningTimeoutRef = useRef<NodeJS.Timeout>()
 
   const initEmailLogin = async (email: Email) => {
     dispatch({ type: "LOADING", payload: true })
@@ -169,9 +185,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (authIframeClient?.iframePublicKey) {
           const loginResponse =
             await authIframeClient?.loginWithReadWriteSession(
-              authIframeClient.iframePublicKey
+              authIframeClient.iframePublicKey,
+              SESSION_EXPIRY
             )
           if (loginResponse?.organizationId) {
+            // Schedule warning for session expiry
+            const expiryTime = Date.now() + parseInt(SESSION_EXPIRY) * 1000
+            scheduleSessionWarning(expiryTime)
             router.push("/dashboard")
           }
         }
@@ -335,7 +355,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (injectSuccess) {
           const loginResponse =
             await authIframeClient?.loginWithReadWriteSession(
-              authIframeClient.iframePublicKey
+              authIframeClient.iframePublicKey,
+              SESSION_EXPIRY
             )
           if (loginResponse?.organizationId) {
             router.push("/dashboard")
@@ -366,6 +387,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     googleLogout()
     router.push("/")
   }
+
+  const scheduleSessionWarning = (expiryTime: number) => {
+    // Clear any existing timeout
+    if (warningTimeoutRef.current) {
+      clearTimeout(warningTimeoutRef.current)
+    }
+
+    const warningTime = expiryTime - WARNING_BUFFER * 1000
+    const now = Date.now()
+    const timeUntilWarning = warningTime - now
+
+    if (timeUntilWarning > 0) {
+      warningTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: "SESSION_EXPIRING", payload: true })
+
+        // Reset the warning after session actually expires
+        const resetTimeout = setTimeout(() => {
+          dispatch({ type: "SESSION_EXPIRING", payload: false })
+        }, WARNING_BUFFER * 1000)
+
+        // Clean up reset timeout on unmount
+        return () => clearTimeout(resetTimeout)
+      }, timeUntilWarning)
+    }
+  }
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (warningTimeoutRef.current) {
+        clearTimeout(warningTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return (
     <AuthContext.Provider
