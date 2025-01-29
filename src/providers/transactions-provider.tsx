@@ -161,6 +161,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     to,
   }: TransactionRequest & { hash: Hex }) => {
     if (!selectedAccount?.address) return
+    if (!from) return
     dispatch({
       type: "ADD_TRANSACTION",
       payload: {
