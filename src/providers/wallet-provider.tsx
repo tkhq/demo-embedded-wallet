@@ -228,18 +228,17 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
         const newAccount = defaultEthereumAccountAtIndex(
           state.selectedWallet.accounts.length + 1
         )
-
         const response = await client.createWalletAccounts({
           walletId: state.selectedWallet.walletId,
           accounts: [newAccount],
         })
-
         if (response && user?.organization.organizationId) {
           // We create a new account object here to skip fetching the full account details from the server
           const account: Account = {
             ...newAccount,
             organizationId: user?.organization.organizationId,
             walletId: state.selectedWallet?.walletId,
+            walletAccountId: "",
             createdAt: {
               seconds: new Date().toISOString(),
               nanos: new Date().toISOString(),

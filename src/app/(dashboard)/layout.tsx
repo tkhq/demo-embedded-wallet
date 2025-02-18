@@ -2,6 +2,7 @@ import { WalletsProvider } from "@/providers/wallet-provider"
 
 import { Toaster } from "@/components/ui/sonner"
 import NavMenu from "@/components/nav-menu"
+import { SessionExpiryWarning } from "@/components/session-expiry-warning"
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
 
         <div className="">{children}</div>
       </WalletsProvider>
+      <SessionExpiryWarning />
       <Toaster />
     </main>
   )
