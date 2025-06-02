@@ -3,6 +3,7 @@ import { Toaster } from "sonner"
 
 import Features from "@/components/features"
 import { ModeToggle } from "@/components/mode-toggle"
+import { DemoBanner } from "@/components/demo-banner"
 
 import gradient from "../../../public/purple-gradient.png"
 
@@ -12,18 +13,21 @@ interface LandingLayoutProps {
 
 export default function LandingLayout({ children }: LandingLayoutProps) {
   return (
-    <main className="grid h-screen lg:grid-cols-[2fr,3fr]">
-      <div className="relative hidden lg:block">
-        <Image
-          className="absolute -z-10 h-full w-full object-cover dark:opacity-65"
-          src={gradient}
-          alt="gradient"
-        />
-        <Features />
-      </div>
-      <div className="flex items-center justify-center px-6">
-        {children}
-        <Toaster />
+    <main className="h-screen">
+      <DemoBanner />
+      <div className="grid h-[calc(100vh-theme(spacing.16))] lg:grid-cols-[2fr,3fr]">
+        <div className="relative hidden lg:block">
+          <Image
+            className="absolute -z-10 h-full w-full object-cover dark:opacity-65"
+            src={gradient}
+            alt="gradient"
+          />
+          <Features />
+        </div>
+        <div className="flex items-center justify-center px-6">
+          {children}
+          <Toaster />
+        </div>
       </div>
     </main>
   )
