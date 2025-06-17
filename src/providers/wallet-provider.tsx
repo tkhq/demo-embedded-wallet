@@ -12,6 +12,7 @@ import {
   DEFAULT_ETHEREUM_ACCOUNTS,
   defaultEthereumAccountAtIndex,
   TurnkeyBrowserClient,
+  TurnkeyIndexedDbClient,
 } from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { useLocalStorage } from "usehooks-ts"
@@ -111,7 +112,7 @@ const initialState: WalletsState = {
 }
 
 async function getWalletsWithAccounts(
-  browserClient: TurnkeyBrowserClient,
+  browserClient: TurnkeyIndexedDbClient,
   organizationId: string
 ): Promise<Wallet[]> {
   const { wallets } = await browserClient.getWallets()
@@ -148,7 +149,7 @@ async function getWalletsWithAccounts(
 // the wallet name
 export function WalletsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(walletsReducer, initialState)
-  const { client, turnkey } = useTurnkey()
+  const { indexedDbClient } = useTurnkey()
   const { user } = useUser()
   const [preferredWallet, setPreferredWallet] =
     useLocalStorage<PreferredWallet>(PREFERRED_WALLET_KEY, {
@@ -166,10 +167,9 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LOADING", payload: true })
       try {
         // We'll try and get the current user's read-only session
-        const browserClient = await turnkey?.currentUserSession()
-        if (browserClient) {
+        if (indexedDbClient) {
           const wallets = await getWalletsWithAccounts(
-            browserClient,
+            indexedDbClient,
             user?.organization?.organizationId
           )
           dispatch({ type: "SET_WALLETS", payload: wallets })
@@ -180,7 +180,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
               const wallet = wallets.find(
                 (wallet) =>
                   wallet.walletId === preferredWallet.walletId &&
-                  user?.userId === preferredWallet.userId
+                  user?.id === preferredWallet.userId
               )
 
               // Preferred wallet is found select it as the current wallet
@@ -192,13 +192,12 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
             selectWallet(selectedWallet)
           }
         } else {
-          const currentUser = await turnkey?.getCurrentUser()
-          if (currentUser?.organization.organizationId) {
+          if (user?.organization.organizationId) {
             // This case occurs when the user signs up with a new passkey; since a read-only session is not created for new passkey sign-ups,
             // we need to fetch the wallets from the server
 
             const wallets = await server.getWalletsWithAccounts(
-              currentUser?.organization.organizationId
+              user?.organization.organizationId
             )
             dispatch({ type: "SET_WALLETS", payload: wallets })
             if (wallets.length > 0) {
@@ -213,7 +212,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       }
     }
     fetchWallets()
-  }, [user, turnkey])
+  }, [user, indexedDbClient])
 
   useEffect(() => {
     if (state.selectedWallet) {
@@ -224,11 +223,11 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const newWalletAccount = async () => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      if (state.selectedWallet && client) {
+      if (state.selectedWallet && indexedDbClient) {
         const newAccount = defaultEthereumAccountAtIndex(
           state.selectedWallet.accounts.length + 1
         )
-        const response = await client.createWalletAccounts({
+        const response = await indexedDbClient.createWalletAccounts({
           walletId: state.selectedWallet.walletId,
           accounts: [newAccount],
         })
@@ -267,8 +266,8 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const newWallet = async (walletName?: string) => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      if (client) {
-        const { walletId } = await client.createWallet({
+      if (indexedDbClient) {
+        const { walletId } = await indexedDbClient.createWallet({
           walletName: walletName || "New Wallet",
           accounts: DEFAULT_ETHEREUM_ACCOUNTS,
         })
@@ -290,7 +289,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const selectWallet = (wallet: Wallet) => {
     dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
     setPreferredWallet({
-      userId: user?.userId || "",
+      userId: user?.id || "",
       walletId: wallet.walletId,
     })
   }

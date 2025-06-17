@@ -93,7 +93,7 @@ function AuthContent() {
             <Icons.turnkey className="h-16 w-full stroke-0 py-2" />
             <Badge
               variant="secondary"
-              className="absolute right-9 top-4 border-primary bg-primary/0 text-xs text-primary"
+              className="absolute -right-1 border-primary bg-primary/0 px-1 py-0.5 text-xs text-primary sm:right-9 sm:top-4"
             >
               Demo
             </Badge>

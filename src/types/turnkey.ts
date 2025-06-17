@@ -1,5 +1,4 @@
-import { TurnkeyApiTypes, type TurnkeyClient } from "@turnkey/http"
-import { Turnkey } from "@turnkey/sdk-browser"
+import { TurnkeyApiTypes } from "@turnkey/http"
 import { Address } from "viem"
 
 export type Attestation = TurnkeyApiTypes["v1Attestation"]
@@ -18,9 +17,14 @@ export type Wallet =
     accounts: Account[]
   }
 
-export type User = Awaited<ReturnType<Turnkey["getCurrentUser"]>> & {
-  email?: Email
-  readOnlySession?: ReadOnlySession
+export type UserSession = {
+  id: string
+  name: string
+  email: string
+  organization: {
+    organizationId: string
+    organizationName: string
+  }
 }
 
 export type Authenticator =

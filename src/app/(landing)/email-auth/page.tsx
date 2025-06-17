@@ -17,17 +17,20 @@ import { Icons } from "@/components/icons"
 function EmailAuthContent() {
   const searchParams = useSearchParams()
   const { completeEmailAuth } = useAuth()
-  const { authIframeClient } = useTurnkey()
+  const { indexedDbClient } = useTurnkey()
   const userEmail = searchParams.get("userEmail")
   const continueWith = searchParams.get("continueWith")
   const credentialBundle = searchParams.get("credentialBundle")
 
   useEffect(() => {
-    // Ensure that the authIframeClient is available before attempting to complete the email auth
-    if (authIframeClient && userEmail && continueWith && credentialBundle) {
-      completeEmailAuth({ userEmail, continueWith, credentialBundle })
+    if (userEmail && continueWith && credentialBundle && indexedDbClient) {
+      completeEmailAuth({
+        userEmail,
+        continueWith,
+        credentialBundle,
+      })
     }
-  }, [authIframeClient])
+  }, [userEmail, continueWith, credentialBundle, indexedDbClient])
 
   return (
     <main className="flex w-full flex-col items-center justify-center">

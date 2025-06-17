@@ -71,6 +71,7 @@ export default function Account() {
   const handleNewAccount = (e: Event) => {
     e.preventDefault()
     e.stopPropagation()
+
     newWalletAccount()
   }
 
@@ -136,7 +137,7 @@ export default function Account() {
         <DropdownMenuLabel className="dark flex w-full items-center gap-2">
           <AccountAvatar address={selectedAccount?.address} />
           <div className="flex flex-col">
-            <span className=" font-semibold">{user?.username}</span>
+            <span className=" font-semibold">{user?.name}</span>
             <span className="text-xs text-muted-foreground">
               {user?.email || ""}
             </span>

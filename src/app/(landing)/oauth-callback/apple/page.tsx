@@ -10,7 +10,6 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Icons } from "@/components/icons"
 
 function OAuthProcessCallback() {
-  const { authIframeClient } = useTurnkey()
   const { loginWithApple } = useAuth()
   const router = useRouter()
 
@@ -37,7 +36,7 @@ function OAuthProcessCallback() {
 
   // Trigger loginWithOAuth when both token and iframePublicKey are available, but only once
   useEffect(() => {
-    if (storedToken && authIframeClient?.iframePublicKey && !hasLoggedIn) {
+    if (storedToken && !hasLoggedIn) {
       try {
         // Call the OAuth login function with the stored token
         loginWithApple(storedToken)
@@ -49,12 +48,7 @@ function OAuthProcessCallback() {
         router.push(`/?error=${encodeURIComponent(msg)}`)
       }
     }
-  }, [
-    storedToken,
-    authIframeClient?.iframePublicKey,
-    hasLoggedIn,
-    loginWithApple,
-  ])
+  }, [storedToken, hasLoggedIn, loginWithApple])
 
   return (
     <main className="flex w-full flex-col items-center justify-center">

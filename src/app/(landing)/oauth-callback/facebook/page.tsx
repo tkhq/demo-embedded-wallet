@@ -15,7 +15,6 @@ import { verifierSegmentToChallenge } from "../../../../lib/facebook-utils"
 function FacebookProcessCallback() {
   const searchParams = useSearchParams()
 
-  const { authIframeClient } = useTurnkey()
   const { loginWithFacebook } = useAuth()
 
   const [storedCode, setStoredCode] = useState<string | null>(null)
@@ -69,19 +68,13 @@ function FacebookProcessCallback() {
       }
     }
 
-    if (
-      storedCode &&
-      storedState &&
-      authIframeClient?.iframePublicKey &&
-      !hasLoggedIn
-    ) {
+    if (storedCode && storedState && !hasLoggedIn) {
       // Call the async handler to exchange the token
       handleTokenExchange()
     }
   }, [
     storedCode,
     storedState,
-    authIframeClient?.iframePublicKey,
     hasLoggedIn,
     loginWithFacebook,
     setHasLoggedIn,

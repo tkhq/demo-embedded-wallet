@@ -52,7 +52,7 @@ export default function TransferDialog() {
   const { state } = useWallets()
   const { selectedAccount } = state
   const { ethPrice } = useTokenPrice()
-  const { client } = useTurnkey()
+  const { turnkey, indexedDbClient } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
   const isDesktop = useMediaQuery("(min-width: 564px)")
   const isClient = useIsClient()
@@ -91,17 +91,17 @@ export default function TransferDialog() {
 
   useEffect(() => {
     const initializeWalletClient = async () => {
-      if (!selectedAccount || !client) return
+      if (!selectedAccount || !indexedDbClient) return
 
       const walletClient = await getTurnkeyWalletClient(
-        client,
+        indexedDbClient,
         selectedAccount.address
       )
       setWalletClient(walletClient)
     }
 
     initializeWalletClient()
-  }, [selectedAccount, client])
+  }, [selectedAccount, indexedDbClient])
 
   useEffect(() => {
     const ethAmountParsed = parseFloat(ethAmount || "0")
