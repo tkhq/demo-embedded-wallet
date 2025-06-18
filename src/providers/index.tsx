@@ -10,6 +10,12 @@ import { ThemeProvider } from "./theme-provider"
 
 const wallet = new EthereumWallet()
 
+// Helper to get current hostname in runtime; falls back to configured value during SSR.
+const getRuntimeRpId = () =>
+  typeof window !== "undefined"
+    ? window.location.hostname
+    : turnkeyConfig.passkey.rpId
+
 export const Providers: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
@@ -22,7 +28,7 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({
   >
     <TurnkeyProvider
       config={{
-        rpId: turnkeyConfig.passkey.rpId,
+        rpId: getRuntimeRpId(),
         apiBaseUrl: turnkeyConfig.apiBaseUrl,
         defaultOrganizationId: turnkeyConfig.organizationId,
         wallet: wallet,
