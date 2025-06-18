@@ -199,7 +199,7 @@ export const oauth = async ({
   })
 
   return {
-    userId: oauthResponse.activity.votes[0]?.userId,
+    userId: oauthResponse.activity.votes?.[0]?.userId,
     session: oauthResponse.session,
     organizationId: subOrgId,
   }
@@ -209,16 +209,19 @@ const getMagicLinkTemplate = (
   action: string,
   email: string,
   method: string,
-  publicKey: string
+  publicKey: string,
+  baseUrl: string = siteConfig.url.base
 ) =>
-  `${siteConfig.url.base}/email-${action}?userEmail=${email}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
+  `${baseUrl}/email-${action}?userEmail=${email}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
 
 export const initEmailAuth = async ({
   email,
   targetPublicKey,
+  baseUrl,
 }: {
   email: Email
   targetPublicKey: string
+  baseUrl?: string
 }) => {
   let organizationId = await getSubOrgIdByEmail(email as Email)
   if (!organizationId) {
@@ -232,7 +235,8 @@ export const initEmailAuth = async ({
     "auth",
     email,
     "email",
-    targetPublicKey
+    targetPublicKey,
+    baseUrl
   )
 
   if (organizationId?.length) {

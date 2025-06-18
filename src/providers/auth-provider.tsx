@@ -171,6 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await initEmailAuth({
         email,
         targetPublicKey,
+        baseUrl: window.location.origin,
       })
 
       if (response) {
