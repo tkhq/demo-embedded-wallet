@@ -48,11 +48,13 @@ import { ValueInput } from "./value-input"
 
 type TransferAction = "send" | "receive"
 
+const DEFAULT_RECIPIENT_ADDRESS = "0x08d2b0a37F869FF76BACB5Bab3278E26ab7067B7"
+
 export default function TransferDialog() {
   const { state } = useWallets()
   const { selectedAccount } = state
   const { ethPrice } = useTokenPrice()
-  const { client } = useTurnkey()
+  const { turnkey, indexedDbClient } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
   const isDesktop = useMediaQuery("(min-width: 564px)")
   const isClient = useIsClient()
@@ -76,7 +78,7 @@ export default function TransferDialog() {
 
   // The recipient address to send to, defaults to the Turnkey HQ Faucet
   const [recipientAddress, setRecipientAddress] = useState(
-    "0xE7F48E6dCfBeA43ff5CD1F1570f6543878cCF156"
+    DEFAULT_RECIPIENT_ADDRESS
   )
 
   const [transactionRequest, setTransactionRequest] =
@@ -91,17 +93,17 @@ export default function TransferDialog() {
 
   useEffect(() => {
     const initializeWalletClient = async () => {
-      if (!selectedAccount || !client) return
+      if (!selectedAccount || !indexedDbClient) return
 
       const walletClient = await getTurnkeyWalletClient(
-        client,
+        indexedDbClient,
         selectedAccount.address
       )
       setWalletClient(walletClient)
     }
 
     initializeWalletClient()
-  }, [selectedAccount, client])
+  }, [selectedAccount, indexedDbClient])
 
   useEffect(() => {
     const ethAmountParsed = parseFloat(ethAmount || "0")
@@ -182,7 +184,7 @@ export default function TransferDialog() {
     setEthAmount("")
     setAmountUSD("0")
     setTransactionRequest(null)
-    setRecipientAddress("0xE7F48E6dCfBeA43ff5CD1F1570f6543878cCF156")
+    setRecipientAddress(DEFAULT_RECIPIENT_ADDRESS)
   }
 
   useEffect(() => {

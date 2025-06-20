@@ -16,18 +16,23 @@ import {
   getSubOrgIdByPublicKey,
   initEmailAuth,
   oauth,
+  otpLogin,
+  verifyOtp,
 } from "@/actions/turnkey"
 import { googleLogout } from "@react-oauth/google"
-import {
-  AuthClient,
-  ReadOnlySession,
-  setStorageValue,
-  StorageKeys,
-} from "@turnkey/sdk-browser"
+import { uncompressRawPublicKey } from "@turnkey/crypto"
+import { AuthClient, Session, SessionType } from "@turnkey/sdk-browser"
 import { useTurnkey } from "@turnkey/sdk-react"
 import { WalletType } from "@turnkey/wallet-stamper"
+import { toHex } from "viem"
 
-import { Email, User } from "@/types/turnkey"
+import { Email, UserSession } from "@/types/turnkey"
+import {
+  getOtpIdFromStorage,
+  removeOtpIdFromStorage,
+  setOtpIdInStorage,
+  setSessionInStorage,
+} from "@/lib/storage"
 
 export const loginResponseToUser = (
   loginResponse: {
@@ -39,14 +44,15 @@ export const loginResponseToUser = (
     sessionExpiry?: string
   },
   authClient: AuthClient
-): User => {
+): UserSession => {
   const subOrganization = {
     organizationId: loginResponse.organizationId,
     organizationName: loginResponse.organizationName,
   }
 
-  let read: ReadOnlySession | undefined
+  let read: Session | undefined
   if (loginResponse.session) {
+    // @ts-expect-error - Turnkey SDK types are not up to date
     read = {
       token: loginResponse.session,
       expiry: Number(loginResponse.sessionExpiry),
@@ -54,23 +60,20 @@ export const loginResponseToUser = (
   }
 
   return {
-    userId: loginResponse.userId,
-    username: loginResponse.username,
+    id: loginResponse.userId,
+    name: loginResponse.username,
+    email: loginResponse.username,
     organization: subOrganization,
-    session: {
-      read,
-      authClient,
-    },
   }
 }
 
 type AuthActionType =
-  | { type: "PASSKEY"; payload: User }
+  | { type: "PASSKEY"; payload: UserSession }
   | { type: "INIT_EMAIL_AUTH" }
-  | { type: "COMPLETE_EMAIL_AUTH"; payload: User }
-  | { type: "EMAIL_RECOVERY"; payload: User }
-  | { type: "WALLET_AUTH"; payload: User }
-  | { type: "OAUTH"; payload: User }
+  | { type: "COMPLETE_EMAIL_AUTH"; payload: UserSession }
+  | { type: "EMAIL_RECOVERY"; payload: UserSession }
+  | { type: "WALLET_AUTH"; payload: UserSession }
+  | { type: "OAUTH"; payload: UserSession }
   | { type: "LOADING"; payload: boolean }
   | { type: "ERROR"; payload: string }
   | { type: "SESSION_EXPIRING"; payload: boolean }
@@ -78,7 +81,7 @@ type AuthActionType =
 interface AuthState {
   loading: boolean
   error: string
-  user: User | null
+  user: UserSession | null
   sessionExpiring: boolean
 }
 
@@ -145,19 +148,37 @@ const WARNING_BUFFER = 30 // seconds before expiry to show warning
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
-  const { turnkey, authIframeClient, passkeyClient, walletClient } =
-    useTurnkey()
+  const { turnkey, indexedDbClient, passkeyClient, walletClient } = useTurnkey()
   const warningTimeoutRef = useRef<NodeJS.Timeout>()
 
   const initEmailLogin = async (email: Email) => {
     dispatch({ type: "LOADING", payload: true })
+
     try {
+      const publicKey = await indexedDbClient?.getPublicKey()
+      if (!publicKey) {
+        throw new Error("No public key found")
+      }
+
+      const targetPublicKey = toHex(
+        uncompressRawPublicKey(new Uint8Array(Buffer.from(publicKey, "hex")))
+      )
+
+      if (!targetPublicKey) {
+        throw new Error("No public key found")
+      }
+
       const response = await initEmailAuth({
         email,
-        targetPublicKey: `${authIframeClient?.iframePublicKey}`,
+        targetPublicKey,
+        baseUrl: window.location.origin,
       })
 
       if (response) {
+        // Persist otpId locally so it can be reused after page reloads
+        if (response.otpId) {
+          setOtpIdInStorage(response.otpId)
+        }
         dispatch({ type: "INIT_EMAIL_AUTH" })
         router.push(`/email-auth?userEmail=${encodeURIComponent(email)}`)
       }
@@ -177,25 +198,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     continueWith: string
     credentialBundle: string
   }) => {
+    // validate inputs and begin auth flow
+
     if (userEmail && continueWith === "email" && credentialBundle) {
       dispatch({ type: "LOADING", payload: true })
 
       try {
-        await authIframeClient?.injectCredentialBundle(credentialBundle)
-        if (authIframeClient?.iframePublicKey) {
-          const loginResponse =
-            await authIframeClient?.loginWithReadWriteSession(
-              authIframeClient.iframePublicKey,
-              SESSION_EXPIRY
-            )
-          if (loginResponse?.organizationId) {
-            // Schedule warning for session expiry
-            const expiryTime = Date.now() + parseInt(SESSION_EXPIRY) * 1000
-            scheduleSessionWarning(expiryTime)
-            router.push("/dashboard")
-          }
+        const publicKeyCompressed = await indexedDbClient?.getPublicKey()
+        if (!publicKeyCompressed) {
+          throw new Error("No public key found")
         }
+        // We keep the compressed key form for downstream calls
+
+        // Retrieve persisted otpId
+        const storedOtpId = getOtpIdFromStorage()
+
+        if (!storedOtpId) {
+          throw new Error("OTP identifier not found. Please restart sign-in.")
+        }
+        const authResponse = await verifyOtp({
+          otpId: storedOtpId,
+          publicKey: publicKeyCompressed,
+          otpCode: credentialBundle,
+        })
+
+        const { session, userId, organizationId } = await otpLogin({
+          email: userEmail as Email,
+          publicKey: publicKeyCompressed,
+          verificationToken: authResponse.verificationToken,
+        })
+
+        await indexedDbClient?.loginWithSession(session || "")
+
+        // Clear persisted otpId after successful login
+        removeOtpIdFromStorage()
+
+        // Schedule warning for session expiry
+        const expiryTime = Date.now() + parseInt(SESSION_EXPIRY) * 1000
+        scheduleSessionWarning(expiryTime)
+
+        setSessionInStorage({
+          id: userId,
+          name: userEmail,
+          email: userEmail,
+          organization: {
+            organizationId: organizationId,
+            organizationName: "",
+          },
+        })
+
+        router.push("/dashboard")
       } catch (error: any) {
+        console.error("[completeEmailAuth] Error:", error)
         dispatch({ type: "ERROR", payload: error.message })
       } finally {
         dispatch({ type: "LOADING", payload: false })
@@ -209,14 +263,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const subOrgId = await getSubOrgIdByEmail(email as Email)
 
       if (subOrgId?.length) {
-        const loginResponse = await passkeyClient?.login()
-        if (loginResponse?.organizationId) {
-          dispatch({
-            type: "PASSKEY",
-            payload: loginResponseToUser(loginResponse, AuthClient.Passkey),
-          })
-          router.push("/dashboard")
-        }
+        await indexedDbClient?.resetKeyPair()
+        const publicKey = await indexedDbClient!.getPublicKey()
+        await passkeyClient?.loginWithPasskey({
+          sessionType: SessionType.READ_WRITE,
+          publicKey,
+        })
+
+        router.push("/dashboard")
       } else {
         // User either does not have an account with a sub organization
         // or does not have a passkey
@@ -242,8 +296,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           })
 
           if (subOrg && user) {
-            await setStorageValue(
-              StorageKeys.UserSession,
+            // Store session using browser localStorage
+            setSessionInStorage(
               loginResponseToUser(
                 {
                   userId: user.userId,
@@ -272,52 +326,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: "LOADING", payload: true })
 
     try {
-      const publicKey = await walletClient?.getPublicKey()
+      await indexedDbClient?.resetKeyPair()
+      const publicKey = await indexedDbClient?.getPublicKey()
+      const walletPublicKey = await walletClient?.getPublicKey()
 
-      if (!publicKey) {
+      if (!publicKey || !walletPublicKey) {
         throw new Error("No public key found")
       }
 
       // Try and get the suborg id given the user's wallet public key
-      const subOrgId = await getSubOrgIdByPublicKey(publicKey)
-
+      let subOrgId = await getSubOrgIdByPublicKey(walletPublicKey)
+      let user = null
       // If the user has a suborg id, use the oauth flow to login
-      if (subOrgId) {
-        const loginResponse = await walletClient?.login({
-          organizationId: subOrgId,
-        })
-
-        if (loginResponse?.organizationId) {
-          router.push("/dashboard")
-        }
-      } else {
+      if (!subOrgId) {
         // If the user does not have a suborg id, create a new suborg for the user
-        const { subOrg, user } = await createUserSubOrg({
+        const { subOrg, user: newUser } = await createUserSubOrg({
           wallet: {
-            publicKey: publicKey,
+            publicKey: walletPublicKey,
             type: WalletType.Ethereum,
           },
         })
-
-        if (subOrg && user) {
-          await setStorageValue(
-            StorageKeys.UserSession,
-            loginResponseToUser(
-              {
-                userId: user.userId,
-                username: user.userName,
-                organizationId: subOrg.subOrganizationId,
-                organizationName: "",
-                session: undefined,
-                sessionExpiry: undefined,
-              },
-              AuthClient.Wallet
-            )
-          )
-
-          router.push("/dashboard")
-        }
+        subOrgId = subOrg.subOrganizationId
+        user = newUser
       }
+
+      await walletClient?.loginWithWallet({
+        publicKey,
+        sessionType: SessionType.READ_WRITE,
+      })
+
+      router.push("/dashboard")
     } catch (error: any) {
       dispatch({ type: "ERROR", payload: error.message })
     } finally {
@@ -328,6 +366,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithOAuth = async (credential: string, providerName: string) => {
     dispatch({ type: "LOADING", payload: true })
     try {
+      const publicKeyCompressed = await indexedDbClient?.getPublicKey()
+
+      if (!publicKeyCompressed) {
+        throw new Error("No public key found")
+      }
+
+      const publicKey = toHex(
+        uncompressRawPublicKey(
+          new Uint8Array(Buffer.from(publicKeyCompressed, "hex"))
+        )
+      ).replace("0x", "")
+
       // Determine if the user has a sub-organization associated with their email
       let subOrgId = await getSubOrgId({ oidcToken: credential })
 
@@ -343,26 +393,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         subOrgId = subOrg.subOrganizationId
       }
 
-      if (authIframeClient?.iframePublicKey) {
-        const oauthResponse = await oauth({
-          credential,
-          targetPublicKey: authIframeClient?.iframePublicKey,
-          targetSubOrgId: subOrgId,
-        })
-        const injectSuccess = await authIframeClient?.injectCredentialBundle(
-          oauthResponse.credentialBundle
-        )
-        if (injectSuccess) {
-          const loginResponse =
-            await authIframeClient?.loginWithReadWriteSession(
-              authIframeClient.iframePublicKey,
-              SESSION_EXPIRY
-            )
-          if (loginResponse?.organizationId) {
-            router.push("/dashboard")
-          }
-        }
-      }
+      // Note: You need to use the compressed public key here because when the
+      // indexedDbClient stamps the request and the key is compared in the backend it expects the compressed version
+      const oauthResponse = await oauth({
+        credential,
+        publicKey: publicKeyCompressed,
+        subOrgId,
+      })
+
+      await indexedDbClient?.loginWithSession(oauthResponse.session)
+
+      router.push("/dashboard")
     } catch (error: any) {
       dispatch({ type: "ERROR", payload: error.message })
     } finally {
@@ -383,7 +424,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const logout = async () => {
-    await turnkey?.logoutUser()
+    await turnkey?.logout()
+    await indexedDbClient?.clear()
     googleLogout()
     router.push("/")
   }

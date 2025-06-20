@@ -19,7 +19,7 @@ export default function AddPasskey({
 }: {
   onPasskeyAdded: (authenticatorId: string) => void
 }) {
-  const { passkeyClient, client } = useTurnkey()
+  const { passkeyClient, indexedDbClient } = useTurnkey()
   const { user } = useUser()
   const [open, setOpen] = useState(false)
   const [passkeyName, setPasskeyName] = useState("")
@@ -35,23 +35,24 @@ export default function AddPasskey({
           name: "Turnkey - Demo Embedded Wallet",
         },
         user: {
-          name: user?.username,
-          displayName: user?.username,
+          name: user?.name,
+          displayName: user?.name,
         },
       },
     })
 
     if (credential) {
-      const authenticatorsResponse = await client?.createAuthenticators({
-        authenticators: [
-          {
-            authenticatorName: passkeyName,
-            challenge: credential.encodedChallenge,
-            attestation: credential.attestation,
-          },
-        ],
-        userId: `${user?.userId}`,
-      })
+      const authenticatorsResponse =
+        await indexedDbClient?.createAuthenticators({
+          authenticators: [
+            {
+              authenticatorName: passkeyName,
+              challenge: credential.encodedChallenge,
+              attestation: credential.attestation,
+            },
+          ],
+          userId: `${user?.id}`,
+        })
 
       if (authenticatorsResponse?.activity.id) {
         toast.success("Passkey added!")

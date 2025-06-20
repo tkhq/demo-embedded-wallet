@@ -28,7 +28,7 @@ export default function ExportWalletDialog({
 }) {
   const { state } = useWallets()
   const { selectedWallet, selectedAccount } = state
-  const { turnkey, client } = useTurnkey()
+  const { turnkey, indexedDbClient } = useTurnkey()
   const { export: exportConfig } = turnkeyConfig.iFrame
   const [iframeClient, setIframeClient] = useState<TurnkeyIframeClient | null>(
     null
@@ -101,16 +101,16 @@ export default function ExportWalletDialog({
 
   const exportSeedPhrase = async () => {
     if (iframeClient && selectedWallet) {
-      const exportResponse = await client?.exportWallet({
+      const exportResponse = await indexedDbClient?.exportWallet({
         walletId: selectedWallet.walletId,
         targetPublicKey: `${iframeClient?.iframePublicKey}`,
       })
 
       if (exportResponse?.exportBundle) {
-        const currentUser = await turnkey?.getCurrentUser()
+        const session = await turnkey?.getSession()
         const response = await iframeClient?.injectWalletExportBundle(
           exportResponse.exportBundle,
-          `${currentUser?.organization.organizationId}`
+          `${session?.organizationId}`
         )
 
         setInjectResponse(response)
@@ -120,15 +120,15 @@ export default function ExportWalletDialog({
 
   const exportPrivateKey = async () => {
     if (iframeClient && selectedAccount) {
-      const exportResponse = await client?.exportWalletAccount({
+      const exportResponse = await indexedDbClient?.exportWalletAccount({
         address: selectedAccount.address,
         targetPublicKey: `${iframeClient?.iframePublicKey}`,
       })
       if (exportResponse?.exportBundle) {
-        const currentUser = await turnkey?.getCurrentUser()
+        const session = await turnkey?.getSession()
         const response = await iframeClient?.injectKeyExportBundle(
           exportResponse.exportBundle,
-          `${currentUser?.organization.organizationId}`
+          `${session?.organizationId}`
         )
 
         setInjectResponse(response)

@@ -16,20 +16,26 @@ const AppleAuth = () => {
   const clientId = env.NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID
   const redirectURI = `${siteConfig.url.base}/oauth-callback/apple`
 
-  const { authIframeClient } = useTurnkey()
+  const { indexedDbClient } = useTurnkey()
 
   const [nonce, setNonce] = useState<string>("")
 
   // Generate nonce based on iframePublicKey
   useEffect(() => {
-    if (authIframeClient?.iframePublicKey) {
-      const hashedPublicKey = sha256(
-        authIframeClient.iframePublicKey as `0x${string}`
-      ).replace(/^0x/, "")
+    const getPublicKey = async () => {
+      const publicKey = await indexedDbClient?.getPublicKey()
+      if (publicKey) {
+        const hashedPublicKey = sha256(publicKey as `0x${string}`).replace(
+          /^0x/,
+          ""
+        )
 
-      setNonce(hashedPublicKey)
+        setNonce(hashedPublicKey)
+      }
     }
-  }, [authIframeClient?.iframePublicKey])
+
+    getPublicKey()
+  }, [indexedDbClient])
 
   return (
     <>

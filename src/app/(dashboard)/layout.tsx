@@ -13,7 +13,6 @@ export default function DashboardLayout({
     <main className=" h-screen bg-muted/40 dark:bg-neutral-950/80">
       <WalletsProvider>
         <NavMenu />
-
         <div className="">{children}</div>
       </WalletsProvider>
       <SessionExpiryWarning />

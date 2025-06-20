@@ -12,7 +12,7 @@ import AddPasskey from "./add-passkey"
 import { PasskeyItem } from "./passkey-item"
 
 export function Passkeys() {
-  const { client } = useTurnkey()
+  const { indexedDbClient } = useTurnkey()
   const { user } = useUser()
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -20,7 +20,7 @@ export function Passkeys() {
   useEffect(() => {
     if (user) {
       setLoading(true)
-      getAuthenticators(user.userId, user.organization.organizationId).then(
+      getAuthenticators(user.id, user.organization.organizationId).then(
         (authenticators) => {
           setAuthenticators(authenticators)
           setLoading(false)
@@ -30,8 +30,8 @@ export function Passkeys() {
   }, [user])
 
   const removeAuthenticator = async (authenticatorId: string) => {
-    const authenticatorResponse = await client?.deleteAuthenticators({
-      userId: `${user?.userId}`,
+    const authenticatorResponse = await indexedDbClient?.deleteAuthenticators({
+      userId: `${user?.id}`,
       authenticatorIds: [authenticatorId],
     })
     if (authenticatorResponse) {

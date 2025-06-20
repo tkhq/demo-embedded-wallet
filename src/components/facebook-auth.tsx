@@ -13,7 +13,7 @@ import { Button } from "./ui/button"
 import { Skeleton } from "./ui/skeleton"
 
 const FacebookAuth = () => {
-  const { authIframeClient } = useTurnkey()
+  const { indexedDbClient } = useTurnkey()
 
   const [nonce, setNonce] = useState<string>("")
 
@@ -25,14 +25,20 @@ const FacebookAuth = () => {
 
   // Generate nonce based on iframePublicKey
   useEffect(() => {
-    if (authIframeClient?.iframePublicKey) {
-      const hashedPublicKey = sha256(
-        authIframeClient.iframePublicKey as `0x${string}`
-      ).replace(/^0x/, "")
+    const getPublicKey = async () => {
+      const publicKey = await indexedDbClient?.getPublicKey()
+      if (publicKey) {
+        const hashedPublicKey = sha256(publicKey as `0x${string}`).replace(
+          /^0x/,
+          ""
+        )
 
-      setNonce(hashedPublicKey)
+        setNonce(hashedPublicKey)
+      }
     }
-  }, [authIframeClient?.iframePublicKey])
+
+    getPublicKey()
+  }, [indexedDbClient])
 
   const redirectToFacebook = async () => {
     const { verifier, codeChallenge } = await generateChallengePair()

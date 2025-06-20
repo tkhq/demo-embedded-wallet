@@ -1,5 +1,6 @@
 "use server"
 
+import { OtpType } from "@turnkey/sdk-react"
 import {
   ApiKeyStamper,
   DEFAULT_ETHEREUM_ACCOUNTS,
@@ -184,34 +185,45 @@ export const createUserSubOrg = async ({
 
 export const oauth = async ({
   credential,
-  targetPublicKey,
-  targetSubOrgId,
+  publicKey,
+  subOrgId,
 }: {
   credential: string
-  targetPublicKey: string
-  targetSubOrgId: string
+  publicKey: string
+  subOrgId: string
 }) => {
-  const oauthResponse = await client.oauth({
+  const oauthResponse = await client.oauthLogin({
     oidcToken: credential,
-    targetPublicKey,
-    organizationId: targetSubOrgId,
+    publicKey,
+    organizationId: subOrgId,
   })
 
-  return oauthResponse
+  return {
+    userId: oauthResponse.activity.votes?.[0]?.userId,
+    session: oauthResponse.session,
+    organizationId: subOrgId,
+  }
 }
 
-const getMagicLinkTemplate = (action: string, email: string, method: string) =>
-  `${siteConfig.url.base}/email-${action}?userEmail=${email}&continueWith=${method}&credentialBundle=%s`
+const getMagicLinkTemplate = (
+  action: string,
+  email: string,
+  method: string,
+  publicKey: string,
+  baseUrl: string = siteConfig.url.base
+) =>
+  `${baseUrl}/email-${action}?userEmail=${email}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
 
 export const initEmailAuth = async ({
   email,
   targetPublicKey,
+  baseUrl,
 }: {
   email: Email
   targetPublicKey: string
+  baseUrl?: string
 }) => {
   let organizationId = await getSubOrgIdByEmail(email as Email)
-
   if (!organizationId) {
     const { subOrg } = await createUserSubOrg({
       email: email as Email,
@@ -219,19 +231,65 @@ export const initEmailAuth = async ({
     organizationId = subOrg.subOrganizationId
   }
 
-  const magicLinkTemplate = getMagicLinkTemplate("auth", email, "email")
+  const magicLinkTemplate = getMagicLinkTemplate(
+    "auth",
+    email,
+    "email",
+    targetPublicKey,
+    baseUrl
+  )
 
   if (organizationId?.length) {
-    const authResponse = await client.emailAuth({
-      email,
-      targetPublicKey,
-      organizationId,
+    const authResponse = await client.initOtp({
+      userIdentifier: targetPublicKey,
+      otpType: OtpType.Email,
+      contact: email,
       emailCustomization: {
         magicLinkTemplate,
       },
     })
-
     return authResponse
+  }
+}
+
+export const verifyOtp = async ({
+  otpId,
+  otpCode,
+  publicKey,
+}: {
+  otpId: string
+  otpCode: string
+  publicKey: string
+}) => {
+  const authResponse = await client.verifyOtp({
+    otpId,
+    otpCode,
+  })
+
+  return authResponse
+}
+
+export const otpLogin = async ({
+  publicKey,
+  verificationToken,
+  email,
+}: {
+  publicKey: string
+  verificationToken: string
+  email: Email
+}) => {
+  const subOrgId = await getSubOrgIdByEmail(email)
+
+  const sessionResponse = await client.otpLogin({
+    verificationToken,
+    publicKey,
+    organizationId: subOrgId,
+  })
+
+  return {
+    userId: sessionResponse.activity.votes[0]?.userId,
+    session: sessionResponse.session,
+    organizationId: subOrgId,
   }
 }
 
@@ -310,13 +368,15 @@ export async function getWalletsWithAccounts(
       })
 
       const accountsWithBalance = await Promise.all(
-        accounts.map(async ({ address, ...account }) => {
-          return {
-            ...account,
-            address: getAddress(address),
-            balance: undefined,
-          }
-        })
+        accounts
+          .filter((account) => account.curve === "CURVE_SECP256K1")
+          .map(async ({ address, ...account }) => {
+            return {
+              ...account,
+              address: getAddress(address),
+              balance: undefined,
+            }
+          })
       )
       return { ...wallet, accounts: accountsWithBalance }
     })

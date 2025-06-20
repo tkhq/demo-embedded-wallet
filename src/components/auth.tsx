@@ -11,6 +11,7 @@ import * as z from "zod"
 
 import { Email } from "@/types/turnkey"
 import { useUser } from "@/hooks/use-user"
+import { Badge } from "@/components/ui/badge"
 import { LoadingButton } from "@/components/ui/button.loader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -88,7 +89,15 @@ function AuthContent() {
     <>
       <Card className="mx-auto w-full max-w-[450px]">
         <CardHeader className="space-y-4">
-          <Icons.turnkey className="h-16 w-full stroke-0 py-2 dark:stroke-white" />
+          <div className="relative flex items-center justify-center gap-2">
+            <Icons.turnkey className="h-16 w-full stroke-0 py-2" />
+            <Badge
+              variant="secondary"
+              className="absolute -right-1 border-primary bg-primary/0 px-1 py-0.5 text-xs text-primary sm:right-9 sm:top-4"
+            >
+              Demo
+            </Badge>
+          </div>
           <CardTitle className="text-center text-xl font-medium">
             Log in or sign up
           </CardTitle>
