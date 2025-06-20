@@ -7,29 +7,37 @@ import {
   GoogleLogin,
   GoogleOAuthProvider,
 } from "@react-oauth/google"
+import { uncompressRawPublicKey } from "@turnkey/crypto"
 import { useTurnkey } from "@turnkey/sdk-react"
-import { sha256 } from "viem"
+import { sha256, toHex } from "viem"
 
 import { env } from "@/env.mjs"
 
 import { Skeleton } from "./ui/skeleton"
 
 const GoogleAuth = () => {
-  const { authIframeClient } = useTurnkey()
+  const { indexedDbClient } = useTurnkey()
   const clientId = env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
 
   const [nonce, setNonce] = useState("")
   const { loginWithGoogle } = useAuth()
 
   useEffect(() => {
-    if (authIframeClient?.iframePublicKey) {
-      const hashedPublicKey = sha256(
-        authIframeClient.iframePublicKey as `0x${string}`
-      ).replace(/^0x/, "")
+    const getPublicKey = async () => {
+      const publicKey = await indexedDbClient?.getPublicKey()
 
-      setNonce(hashedPublicKey)
+      if (publicKey) {
+        const hashedPublicKey = sha256(publicKey as `0x${string}`).replace(
+          /^0x/,
+          ""
+        )
+
+        setNonce(hashedPublicKey)
+      }
     }
-  }, [authIframeClient?.iframePublicKey])
+
+    getPublicKey()
+  }, [indexedDbClient])
 
   const onSuccess = (credentialResponse: CredentialResponse) => {
     if (credentialResponse.credential) {

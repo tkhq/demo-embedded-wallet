@@ -32,9 +32,7 @@ export default function ImportWalletDialog({
 }: {
   children: React.ReactNode
 }) {
-  const { state } = useWallets()
-  const { selectedWallet, selectedAccount } = state
-  const { turnkey, getActiveClient, authIframeClient } = useTurnkey()
+  const { turnkey, indexedDbClient } = useTurnkey()
   const { import: importConfig } = turnkeyConfig.iFrame
   const [iframeClient, setIframeClient] = useState<TurnkeyIframeClient | null>(
     null
@@ -93,18 +91,17 @@ export default function ImportWalletDialog({
   }
 
   const initImportWallet = async () => {
-    const currentUser = await turnkey?.getCurrentUser()
-    const activeClient = await getActiveClient()
+    const session = await turnkey?.getSession()
 
-    const initImportResponse = await activeClient?.initImportWallet({
-      userId: `${currentUser?.userId}`,
+    const initImportResponse = await indexedDbClient?.initImportWallet({
+      userId: `${session?.userId}`,
     })
 
     if (initImportResponse?.importBundle) {
       const injectResponse = await iframeClient?.injectImportBundle(
         initImportResponse.importBundle,
-        `${currentUser?.organization.organizationId}`,
-        `${currentUser?.userId}`
+        `${session?.organizationId}`,
+        `${session?.userId}`
       )
 
       if (injectResponse) {
@@ -114,13 +111,12 @@ export default function ImportWalletDialog({
   }
 
   const importWallet = async () => {
-    const currentUser = await turnkey?.getCurrentUser()
-    const activeClient = await getActiveClient()
+    const session = await turnkey?.getSession()
     const encryptedBundle = await iframeClient?.extractWalletEncryptedBundle()
 
     if (encryptedBundle) {
-      const importResponse = await activeClient?.importWallet({
-        userId: `${currentUser?.userId}`,
+      const importResponse = await indexedDbClient?.importWallet({
+        userId: `${session?.userId}`,
         walletName: importName,
         encryptedBundle,
         accounts: DEFAULT_ETHEREUM_ACCOUNTS,
@@ -133,18 +129,17 @@ export default function ImportWalletDialog({
   }
 
   const initImportPrivateKey = async () => {
-    const currentUser = await turnkey?.getCurrentUser()
-    const activeClient = await getActiveClient()
+    const session = await turnkey?.getSession()
 
-    const initImportResponse = await activeClient?.initImportPrivateKey({
-      userId: `${currentUser?.userId}`,
+    const initImportResponse = await indexedDbClient?.initImportPrivateKey({
+      userId: `${session?.userId}`,
     })
 
     if (initImportResponse?.importBundle) {
       const injectResponse = await iframeClient?.injectImportBundle(
         initImportResponse.importBundle,
-        `${currentUser?.organization.organizationId}`,
-        `${currentUser?.userId}`
+        `${session?.organizationId}`,
+        `${session?.userId}`
       )
 
       if (injectResponse) {
@@ -154,14 +149,13 @@ export default function ImportWalletDialog({
   }
 
   const importPrivateKey = async () => {
-    const currentUser = await turnkey?.getCurrentUser()
-    const activeClient = await getActiveClient()
+    const session = await turnkey?.getSession()
 
     const encryptedBundle = await iframeClient?.extractKeyEncryptedBundle()
 
     if (encryptedBundle) {
-      const importResponse = await activeClient?.importPrivateKey({
-        userId: `${currentUser?.userId}`,
+      const importResponse = await indexedDbClient?.importPrivateKey({
+        userId: `${session?.userId}`,
         privateKeyName: importName,
         encryptedBundle: encryptedBundle,
         // TODO: Add support for other curves like solana
