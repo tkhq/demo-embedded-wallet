@@ -260,10 +260,7 @@ export default function TransferDialog() {
             onChange={(e) => setRecipientAddress(e.target.value)}
             className=" flex-grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
           /> */}
-          <RecipientAddressInput
-            initialAddress={recipientAddress}
-            onAddressChange={setRecipientAddress}
-          />
+          <RecipientAddressInput initialAddress={recipientAddress} />
         </div>
 
         <Button
