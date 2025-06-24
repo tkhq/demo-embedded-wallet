@@ -126,7 +126,7 @@ export const watchPendingTransactions = (
 }
 
 export const fundWallet = async (address: Address) => {
-  const fundingAmountText = "0.005 ETH"
+  const fundingAmountText = "0.001 ETH"
 
   try {
     const publicClient = getPublicClient()
