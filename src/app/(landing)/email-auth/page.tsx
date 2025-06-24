@@ -22,6 +22,8 @@ function EmailAuthContent() {
   const continueWith = searchParams.get("continueWith")
   const credentialBundle = searchParams.get("credentialBundle")
 
+  console.log("email auth content email", userEmail)
+
   useEffect(() => {
     if (userEmail && continueWith && credentialBundle && indexedDbClient) {
       completeEmailAuth({
