@@ -18,7 +18,10 @@ function EmailAuthContent() {
   const searchParams = useSearchParams()
   const { completeEmailAuth } = useAuth()
   const { indexedDbClient } = useTurnkey()
-  const userEmail = searchParams.get("userEmail")
+  const rawEmail = searchParams.get("userEmail")
+  const userEmail = rawEmail?.includes(" ")
+    ? rawEmail.replace(/ /g, "+")
+    : rawEmail
   const continueWith = searchParams.get("continueWith")
   const credentialBundle = searchParams.get("credentialBundle")
 

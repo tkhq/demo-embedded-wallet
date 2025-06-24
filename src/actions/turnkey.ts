@@ -212,7 +212,7 @@ const getMagicLinkTemplate = (
   publicKey: string,
   baseUrl: string = siteConfig.url.base
 ) =>
-  `${baseUrl}/email-${action}?userEmail=${email}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
+  `${baseUrl}/email-${action}?userEmail=${encodeURIComponent(email)}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
 
 export const initEmailAuth = async ({
   email,
@@ -279,6 +279,10 @@ export const otpLogin = async ({
   email: Email
 }) => {
   const subOrgId = await getSubOrgIdByEmail(email)
+
+  if (!subOrgId) {
+    throw new Error("Could not find suborg by email")
+  }
 
   const sessionResponse = await client.otpLogin({
     verificationToken,
