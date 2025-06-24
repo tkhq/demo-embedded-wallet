@@ -280,6 +280,10 @@ export const otpLogin = async ({
 }) => {
   const subOrgId = await getSubOrgIdByEmail(email)
 
+  if (!subOrgId) {
+    throw new Error("Could not find suborg by email")
+  }
+
   const sessionResponse = await client.otpLogin({
     verificationToken,
     publicKey,
