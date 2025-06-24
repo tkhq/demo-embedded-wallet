@@ -212,7 +212,7 @@ const getMagicLinkTemplate = (
   publicKey: string,
   baseUrl: string = siteConfig.url.base
 ) =>
-  `${baseUrl}/email-${action}?userEmail=${encodeURIComponent(email)}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
+  `${baseUrl}/email-${action}?userEmail=${email}&continueWith=${method}&publicKey=${publicKey}&credentialBundle=%s`
 
 export const initEmailAuth = async ({
   email,
