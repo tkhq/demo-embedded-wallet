@@ -440,7 +440,7 @@ const warchestClient = new TurnkeyServerClient({
 })
 
 export const fundWallet = async (address: Address) => {
-  const value = parseEther("0.005")
+  const value = parseEther("0.001")
   const { receivedTransactions } = await getTransactions(address)
 
   if (receivedTransactions.length >= 1) {
