@@ -222,6 +222,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           otpCode: credentialBundle,
         })
 
+        console.log("complete email auth email", userEmail)
+
         const { session, userId, organizationId } = await otpLogin({
           email: userEmail as Email,
           publicKey: publicKeyCompressed,

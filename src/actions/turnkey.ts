@@ -278,7 +278,11 @@ export const otpLogin = async ({
   verificationToken: string
   email: Email
 }) => {
+  console.log("otp login email", email)
+
   const subOrgId = await getSubOrgIdByEmail(email)
+
+  console.log("suborg ID", subOrgId)
 
   const sessionResponse = await client.otpLogin({
     verificationToken,
