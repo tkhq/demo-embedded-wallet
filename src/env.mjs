@@ -14,6 +14,9 @@ export const env = createEnv({
     NEXT_PUBLIC_ORGANIZATION_ID: z.string().min(1),
     NEXT_PUBLIC_ALCHEMY_API_KEY: z.string().min(1),
     NEXT_PUBLIC_FACEBOOK_AUTH_VERSION: z.string().min(1),
+    NEXT_PUBLIC_AUTH_IFRAME_URL: z.string().optional(),
+    NEXT_PUBLIC_EXPORT_IFRAME_URL: z.string().optional(),
+    NEXT_PUBLIC_IMPORT_IFRAME_URL: z.string().optional(),
   },
   server: {
     NEXT_PUBLIC_RP_ID: z.string().optional(),
@@ -53,6 +56,9 @@ export const env = createEnv({
     TURNKEY_API_PRIVATE_KEY: process.env.TURNKEY_API_PRIVATE_KEY,
     NEXT_PUBLIC_ORGANIZATION_ID: process.env.NEXT_PUBLIC_ORGANIZATION_ID,
     NEXT_PUBLIC_ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
+    NEXT_PUBLIC_AUTH_IFRAME_URL: process.env.NEXT_PUBLIC_AUTH_IFRAME_URL,
+    NEXT_PUBLIC_EXPORT_IFRAME_URL: process.env.NEXT_PUBLIC_EXPORT_IFRAME_URL,
+    NEXT_PUBLIC_IMPORT_IFRAME_URL: process.env.NEXT_PUBLIC_IMPORT_IFRAME_URL,
     COINGECKO_API_KEY: process.env.COINGECKO_API_KEY,
     TURNKEY_WARCHEST_API_PUBLIC_KEY:
       process.env.TURNKEY_WARCHEST_API_PUBLIC_KEY,
