@@ -316,6 +316,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } catch (error: any) {
+      // Catch the user cancel error and force a hard reload to avoid a stalled key
+      const message: string = error?.message || "";
+      if (message.includes("NotAllowedError")) {
+      window.location.reload();
+      return;
+    }
       dispatch({ type: "ERROR", payload: error.message })
     } finally {
       dispatch({ type: "LOADING", payload: false })
