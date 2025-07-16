@@ -58,24 +58,32 @@ export async function exchangeToken(code: string, codeVerifier: string) {
   const url = `https://graph.facebook.com/v${graphAPIVersion}/oauth/access_token`
 
   const clientID = env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID
+  const clientSecret = env.FACEBOOK_APP_SECRET
   const redirectURI = `${siteConfig.url.base}/oauth-callback/facebook`
 
   const params = new URLSearchParams({
     client_id: clientID,
+    client_secret: clientSecret,
     redirect_uri: redirectURI,
     code: code,
     code_verifier: codeVerifier,
   })
 
   try {
-    const target = `${url}?${params.toString()}`
-
-    const response = await fetch(target, {
-      method: "GET",
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
     })
 
     if (!response.ok) {
-      throw new Error(`Token exchange failed: ${response.statusText}`)
+      const errorText = await response.text()
+      console.error("Facebook token exchange error:", errorText)
+      throw new Error(
+        `Token exchange failed: ${response.statusText} - ${errorText}`
+      )
     }
 
     const data = await response.json()
