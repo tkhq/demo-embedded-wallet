@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useTurnkey } from "@turnkey/sdk-react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
@@ -35,9 +35,8 @@ const formSchema = z.object({
 })
 
 function AuthContent() {
-  const { user } = useUser()
-  const { passkeyClient } = useTurnkey()
-  const { initEmailLogin, state, loginWithPasskey, loginWithWallet } = useAuth()
+  const { httpClient, loginWithPasskey, signUpWithPasskey, user } = useTurnkey()
+  const { initEmailLogin, state, loginWithWallet } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -64,12 +63,21 @@ function AuthContent() {
 
   const handlePasskeyLogin = async (email: Email) => {
     setLoadingAction("passkey")
-    if (!passkeyClient) {
-      setLoadingAction(null)
-      return
+    // Check to see if the user's account exists
+    const account = await httpClient?.proxyGetAccount({
+      filterType: "EMAIL",
+      filterValue: email,
+    })
+    console.log(account)
+    // If the user's account exists, we assume they have already created a passkey
+    if (account?.organizationId) {
+      await loginWithPasskey()
+    } else {
+      // If the user's account does not exist, we assume they have not created a passkey
+      // and we need to sign them up
+      await signUpWithPasskey()
     }
 
-    await loginWithPasskey(email)
     setLoadingAction(null)
   }
 

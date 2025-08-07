@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useWallets } from "@/providers/wallet-provider"
+import { ExportType, useTurnkey } from "@turnkey/react-wallet-kit"
 import { CopyIcon, Download, HandCoins, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { formatEther } from "viem"
@@ -18,14 +19,15 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-import ExportWalletDialog from "./export-wallet"
-import ImportWalletDialog from "./import-wallet"
+// import ExportWalletDialog from "./export-wallet"
+// import ImportWalletDialog from "./import-wallet"
 import TransferDialog from "./transfer-dialog"
 import { Skeleton } from "./ui/skeleton"
 
 export default function WalletCard() {
   const { ethPrice } = useTokenPrice()
   const { state } = useWallets()
+  const { handleImport, handleExport } = useTurnkey()
   const { selectedWallet, selectedAccount } = state
   const [usdAmount, setUsdAmount] = useState<number | undefined>(undefined)
 
@@ -67,18 +69,15 @@ export default function WalletCard() {
             Add funds
           </Button>
           <TransferDialog />
-          <ImportWalletDialog>
-            <Button variant="outline" onClick={handleImportWallet}>
-              <Download className="mr-2 h-4 w-4" />
-              Import
-            </Button>
-          </ImportWalletDialog>
 
-          <ExportWalletDialog>
-            <Button variant="outline" onClick={handleExportWallet}>
-              <Upload className="mr-2 h-4 w-4" /> Export
-            </Button>
-          </ExportWalletDialog>
+          <Button variant="outline" onClick={() => handleImport()}>
+            <Download className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+
+          <Button variant="outline" onClick={handleExportWallet}>
+            <Upload className="mr-2 h-4 w-4" /> Export
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-1">
@@ -116,26 +115,28 @@ export default function WalletCard() {
           </Button>
           <TransferDialog />
           <div className="flex w-full items-center gap-2">
-            <ImportWalletDialog>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleImportWallet}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Import
-              </Button>
-            </ImportWalletDialog>
-            <ExportWalletDialog>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleExportWallet}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </ExportWalletDialog>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => handleImport()}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() =>
+                handleExport({
+                  walletId: selectedWallet?.walletId ?? "",
+                  exportType: ExportType.Wallet,
+                })
+              }
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Export
+            </Button>
           </div>
         </div>
       </CardFooter>

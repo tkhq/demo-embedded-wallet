@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useWallets } from "@/providers/wallet-provider"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -52,11 +53,12 @@ function AccountAvatar({ address }: { address: string | undefined }) {
 
 export default function Account() {
   const router = useRouter()
-  const { logout } = useAuth()
+
   const { user } = useUser()
   const { state, newWallet, newWalletAccount, selectWallet, selectAccount } =
     useWallets()
-  const { selectedWallet, selectedAccount, wallets } = state
+  const { selectedWallet, selectedAccount } = state
+  const { createWallet, wallets, logout } = useTurnkey()
 
   const [isOpen, setIsOpen] = useState(false)
   const [isNewWalletMode, setIsNewWalletMode] = useState(false)
@@ -79,16 +81,14 @@ export default function Account() {
     (e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      newWallet(newWalletName)
+      createWallet({
+        walletName: newWalletName,
+      })
       setIsNewWalletMode(false)
       setNewWalletName("")
     },
     [newWalletName, newWallet]
   )
-
-  const handleLogout = () => {
-    logout()
-  }
 
   useEffect(() => {
     setTimeout(() => {
@@ -227,7 +227,7 @@ export default function Account() {
           <SettingsIcon className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleLogout}>
+        <DropdownMenuItem onSelect={() => logout()}>
           <LogOutIcon className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
