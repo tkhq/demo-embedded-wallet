@@ -236,7 +236,7 @@ export default function TransferDialog() {
               </g>
             </svg>
           </div>
-          <div className="flex-grow">
+          <div className="grow">
             <div className="font-semibold">Send</div>
             <div className="text-sm ">Ethereum (Sepolia)</div>
           </div>
@@ -258,7 +258,7 @@ export default function TransferDialog() {
             placeholder="Enter recipient address"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            className=" flex-grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
+            className=" grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
           /> */}
           <RecipientAddressInput initialAddress={recipientAddress} />
         </div>

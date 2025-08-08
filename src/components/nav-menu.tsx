@@ -6,7 +6,7 @@ import { Badge } from "./ui/badge"
 
 export default function NavMenu() {
   return (
-    <div className="flex h-[5rem] items-center justify-between gap-4 bg-black p-4 sm:px-10">
+    <div className="flex h-20 items-center justify-between gap-4 bg-black p-4 sm:px-10">
       <div className="flex items-center gap-1">
         <Link href="/dashboard">
           <Icons.turnkey className="h-6 w-auto  fill-white stroke-none sm:h-7" />

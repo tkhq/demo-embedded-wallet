@@ -24,7 +24,7 @@ export function PasskeyItem({
   return (
     <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
       <div className="flex items-center space-x-4">
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 sm:h-10 sm:w-10">
             <Key className="h-3 w-3 text-primary sm:h-5 sm:w-5" />
           </div>

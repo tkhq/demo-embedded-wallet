@@ -1,5 +1,5 @@
-import "@turnkey/react-wallet-kit/dist/styles.css"
 import "@/styles/globals.css"
+import "@turnkey/react-wallet-kit/dist/styles.css"
 
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
@@ -70,7 +70,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <head />
       <body
         className={cn(
-          "min-h-screen bg-background antialiased",
+          "bg-background min-h-screen antialiased",
           inter.className
         )}
       >

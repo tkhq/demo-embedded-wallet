@@ -13,7 +13,7 @@ interface LandingLayoutProps {
 export default function LandingLayout({ children }: LandingLayoutProps) {
   return (
     <main className="h-screen">
-      <div className="grid h-full lg:grid-cols-[2fr,3fr]">
+      <div className="grid h-full lg:grid-cols-[2fr_3fr]">
         <div className="relative hidden lg:block">
           <Image
             className="absolute -z-10 h-full w-full object-cover dark:opacity-65"

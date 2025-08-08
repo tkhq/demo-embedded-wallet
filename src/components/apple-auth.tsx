@@ -54,7 +54,7 @@ const AppleAuth = () => {
                 onClick={onClick}
               >
                 <SiApple className="h-4 w-4" />
-                <span className="flex-grow text-center font-normal">
+                <span className="grow text-center font-normal">
                   Sign in with Apple
                 </span>{" "}
               </Button>
