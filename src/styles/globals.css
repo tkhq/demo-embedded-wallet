@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "@turnkey/react-wallet-kit/dist/styles.css";
-
 @layer base {
   :root {
     --background: 0 0% 100%;

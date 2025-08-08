@@ -1,3 +1,4 @@
+import "@turnkey/react-wallet-kit/dist/styles.css"
 import "@/styles/globals.css"
 
 import type { Metadata, Viewport } from "next"
