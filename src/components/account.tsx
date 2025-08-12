@@ -54,12 +54,14 @@ function AccountAvatar({ address }: { address: string | undefined }) {
 export default function Account() {
   const router = useRouter()
 
-  const { user } = useUser()
   const { state, newWallet, newWalletAccount, selectWallet, selectAccount } =
     useWallets()
-  const { selectedWallet, selectedAccount } = state
-  const { createWallet, wallets, logout } = useTurnkey()
-  console.log("wallets", JSON.stringify(wallets, null, 2))
+  const { wallets, selectedWallet, selectedAccount } = state
+  const { logout, user, authState } = useTurnkey()
+  console.log("selectedWallet", selectedWallet)
+  console.log("turnkeyUser", user)
+  console.log("authState", authState)
+
   const [isOpen, setIsOpen] = useState(false)
   const [isNewWalletMode, setIsNewWalletMode] = useState(false)
   const [newWalletName, setNewWalletName] = useState("")
@@ -81,9 +83,7 @@ export default function Account() {
     (e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      createWallet({
-        walletName: newWalletName,
-      })
+      newWallet(newWalletName)
       setIsNewWalletMode(false)
       setNewWalletName("")
     },
@@ -137,9 +137,9 @@ export default function Account() {
         <DropdownMenuLabel className="dark flex w-full items-center gap-2">
           <AccountAvatar address={selectedAccount?.address} />
           <div className="flex flex-col">
-            <span className="font-semibold">{user?.name}</span>
+            <span className="font-semibold">{user?.userName}</span>
             <span className="text-muted-foreground text-xs">
-              {user?.email || ""}
+              {user?.userEmail || ""}
             </span>
           </div>
         </DropdownMenuLabel>

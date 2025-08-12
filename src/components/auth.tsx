@@ -10,7 +10,6 @@ import { toast } from "sonner"
 import * as z from "zod"
 
 import { Email } from "@/types/turnkey"
-import { useUser } from "@/hooks/use-user"
 import { Badge } from "@/components/ui/badge"
 import { LoadingButton } from "@/components/ui/button.loader"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,6 +37,7 @@ function AuthContent() {
   const { httpClient, loginWithPasskey, signUpWithPasskey, user } = useTurnkey()
   const { initEmailLogin, state, loginWithWallet } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -49,8 +49,16 @@ function AuthContent() {
   })
 
   useEffect(() => {
+    console.log("user", user)
     if (user) {
-      router.push("/dashboard")
+      // router.push("/dashboard")
+      // if (email) {
+      //   console.log("updating user email", user.userId, email)
+      //   httpClient?.updateUserEmail({
+      //     userId: user.userId,
+      //     userEmail: email,
+      //   })
+      // }
     }
   }, [user, router])
 
@@ -62,20 +70,35 @@ function AuthContent() {
   }, [searchParams])
 
   const handlePasskeyLogin = async (email: Email) => {
+    setEmail(email)
     setLoadingAction("passkey")
     // Check to see if the user's account exists
     const account = await httpClient?.proxyGetAccount({
       filterType: "EMAIL",
       filterValue: email,
     })
-    console.log(account)
+    // TODO: If account is {} or undefined that means this email is not verified and therefore no account exists
+
+    // TODO: First call initOTP to verify the email
+    // TODO: Then call signUpWithPasskey to create the account
+
+    console.log("account", account?.organizationId)
     // If the user's account exists, we assume they have already created a passkey
     if (account?.organizationId) {
       await loginWithPasskey()
     } else {
       // If the user's account does not exist, we assume they have not created a passkey
-      // and we need to sign them up
-      await signUpWithPasskey()
+      // and we need to verify their email via OTP and then sign them up
+      const init = await httpClient?.proxyInitOtp({
+        otpType: "OTP_TYPE_EMAIL",
+        contact: email,
+      })
+
+      if (init?.otpId) {
+        router.push(
+          `/verify-email?id=${encodeURIComponent(init.otpId)}&email=${encodeURIComponent(email)}`
+        )
+      }
     }
 
     setLoadingAction(null)
@@ -101,7 +124,7 @@ function AuthContent() {
             <Icons.turnkey className="h-16 w-full stroke-0 py-2" />
             <Badge
               variant="secondary"
-              className="absolute -right-1 border-primary bg-primary/0 px-1 py-0.5 text-xs text-primary sm:right-9 sm:top-4"
+              className="border-primary bg-primary/0 text-primary absolute -right-1 px-1 py-0.5 text-xs sm:top-4 sm:right-9"
             >
               Demo
             </Badge>

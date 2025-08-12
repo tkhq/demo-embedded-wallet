@@ -6,22 +6,15 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
 } from "react"
-import { server } from "@/actions"
-import {
-  DEFAULT_ETHEREUM_ACCOUNTS,
-  defaultEthereumAccountAtIndex,
-  TurnkeyBrowserClient,
-  TurnkeyIndexedDbClient,
-} from "@turnkey/sdk-browser"
-import { useTurnkey } from "@turnkey/sdk-react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { useLocalStorage } from "usehooks-ts"
 import { getAddress } from "viem"
 
 import { Account, PreferredWallet, Wallet } from "@/types/turnkey"
 import { PREFERRED_WALLET_KEY } from "@/lib/constants"
 import { getBalance } from "@/lib/web3"
-import { useUser } from "@/hooks/use-user"
 
 interface WalletsState {
   loading: boolean
@@ -111,147 +104,149 @@ const initialState: WalletsState = {
   selectedAccount: null,
 }
 
-async function getWalletsWithAccounts(
-  browserClient: TurnkeyIndexedDbClient,
-  organizationId: string
-): Promise<Wallet[]> {
-  const { wallets } = await browserClient.getWallets()
-  return await Promise.all(
-    wallets.map(async (wallet) => {
-      const { accounts } = await browserClient.getWalletAccounts({
-        walletId: wallet.walletId,
-      })
-
-      const accountsWithBalance = await accounts.reduce<Promise<Account[]>>(
-        async (accPromise, { address, ...account }) => {
-          const acc = await accPromise
-          // Ensure the account's organizationId matches the provided organizationId
-          if (account.organizationId === organizationId) {
-            acc.push({
-              ...account,
-              address: getAddress(address),
-              // Balance is initialized to undefined so that it can be fetched lazily on account selection
-              balance: await getBalance(getAddress(address)),
-            })
-          }
-          return acc
-        },
-        Promise.resolve([])
-      )
-
-      return { ...wallet, accounts: accountsWithBalance }
-    })
-  )
-}
-
 // @todo - add an updateWallets function that will be called when the user
 // updates their wallet settings, such as adding a new account or updating
 // the wallet name
 export function WalletsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(walletsReducer, initialState)
-  const { indexedDbClient } = useTurnkey()
-  const { user } = useUser()
+  const {
+    wallets: hookWallets,
+    createWallet,
+    createWalletAccounts,
+    refreshWallets,
+    user,
+    session,
+  } = useTurnkey()
+
   const [preferredWallet, setPreferredWallet] =
     useLocalStorage<PreferredWallet>(PREFERRED_WALLET_KEY, {
       userId: "",
       walletId: "",
     })
+  const balanceCacheRef = useRef<Map<string, Promise<bigint> | bigint>>(
+    new Map()
+  )
+  const pendingSelectWalletIdRef = useRef<string | null>(null)
+  const pendingSelectAccountAddressRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // @todo - ensure that we don't fetch wallets more than once
-    // This should only run at initial page load
-    const fetchWallets = async () => {
-      if (!user?.organization?.organizationId) {
+    console.log("session", session)
+    if (!session?.organizationId) {
+      return
+    }
+
+    const normalizedWallets: Wallet[] = (hookWallets ?? []).map(
+      (wallet: any) => ({
+        ...wallet,
+        accounts: (wallet.accounts ?? []).map((account: any) => ({
+          ...account,
+          address: getAddress(account.address),
+        })),
+      })
+    )
+    console.log("normalizedWallets", normalizedWallets)
+    dispatch({ type: "SET_WALLETS", payload: normalizedWallets })
+
+    if (normalizedWallets.length === 0) {
+      // Clear selection if no wallets available
+      return
+    }
+
+    // Keep the currently selected wallet in sync with the latest wallets data
+    if (state.selectedWallet) {
+      const updatedSelected = normalizedWallets.find(
+        (w) => w.walletId === state.selectedWallet?.walletId
+      )
+      if (updatedSelected) {
+        dispatch({ type: "SET_SELECTED_WALLET", payload: updatedSelected })
+      }
+    }
+
+    // If a wallet has been requested for selection by id (optimistic path), try to select it
+    if (pendingSelectWalletIdRef.current) {
+      const match = normalizedWallets.find(
+        (w) => w.walletId === pendingSelectWalletIdRef.current
+      )
+      if (match) {
+        selectWallet(match)
+        pendingSelectWalletIdRef.current = null
         return
       }
-      dispatch({ type: "SET_LOADING", payload: true })
-      try {
-        // We'll try and get the current user's read-only session
-        if (indexedDbClient) {
-          const wallets = await getWalletsWithAccounts(
-            indexedDbClient,
-            user?.organization?.organizationId
-          )
-          dispatch({ type: "SET_WALLETS", payload: wallets })
-          if (wallets.length > 0) {
-            let selectedWallet: Wallet = wallets[0]
-            // If the user has a preferred wallet, select it
-            if (preferredWallet.userId && preferredWallet.walletId) {
-              const wallet = wallets.find(
-                (wallet) =>
-                  wallet.walletId === preferredWallet.walletId &&
-                  user?.id === preferredWallet.userId
-              )
+    }
 
-              // Preferred wallet is found select it as the current wallet
-              // otherwise select the first wallet in the list of wallets
-              if (wallet) {
-                selectedWallet = wallet
-              }
-            }
-            selectWallet(selectedWallet)
-          }
-        } else {
-          if (user?.organization.organizationId) {
-            // This case occurs when the user signs up with a new passkey; since a read-only session is not created for new passkey sign-ups,
-            // we need to fetch the wallets from the server
-
-            const wallets = await server.getWalletsWithAccounts(
-              user?.organization.organizationId
-            )
-            dispatch({ type: "SET_WALLETS", payload: wallets })
-            if (wallets.length > 0) {
-              selectWallet(wallets[0])
-            }
-          }
-        }
-      } catch (error) {
-        dispatch({ type: "SET_ERROR", payload: "Failed to fetch wallets" })
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: false })
+    // If a newly created account address is pending selection, select it once it exists in the current selected wallet
+    if (pendingSelectAccountAddressRef.current && state.selectedWallet) {
+      const currentWallet = normalizedWallets.find(
+        (w) => w.walletId === state.selectedWallet?.walletId
+      )
+      const account = currentWallet?.accounts?.find(
+        (a: any) =>
+          getAddress(a.address) === pendingSelectAccountAddressRef.current
+      )
+      if (account) {
+        // Select the newly created account and clear the pending ref
+        selectAccount(account as Account)
+        pendingSelectAccountAddressRef.current = null
       }
     }
-    fetchWallets()
-  }, [user, indexedDbClient])
+
+    // Only auto-select when nothing is selected to avoid overriding user choice
+    if (!state.selectedWallet) {
+      let selected: Wallet = normalizedWallets[0]
+      if (preferredWallet.userId === user?.userId && preferredWallet.walletId) {
+        const preferred = normalizedWallets.find(
+          (w) => w.walletId === preferredWallet.walletId
+        )
+        if (preferred) selected = preferred
+      }
+      selectWallet(selected)
+    }
+  }, [hookWallets, user])
 
   useEffect(() => {
-    if (state.selectedWallet) {
+    if (
+      state.selectedWallet &&
+      state.selectedWallet.accounts?.length &&
+      !state.selectedAccount &&
+      !pendingSelectAccountAddressRef.current
+    ) {
       selectAccount(state.selectedWallet.accounts[0])
     }
-  }, [state.selectedWallet])
+  }, [state.selectedWallet, state.selectedAccount])
+
+  async function getCachedBalance(address: string): Promise<bigint> {
+    const key = getAddress(address)
+    const cached = balanceCacheRef.current.get(key)
+    if (cached instanceof Promise) return cached
+    if (typeof cached === "bigint") return cached
+
+    const promise = getBalance(key)
+      .then((balance) => {
+        balanceCacheRef.current.set(key, balance)
+        return balance
+      })
+      .catch((error) => {
+        balanceCacheRef.current.delete(key)
+        throw error
+      })
+
+    balanceCacheRef.current.set(key, promise)
+    return promise
+  }
 
   const newWalletAccount = async () => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      if (state.selectedWallet && indexedDbClient) {
-        const newAccount = defaultEthereumAccountAtIndex(
-          state.selectedWallet.accounts.length + 1
-        )
-        const response = await indexedDbClient.createWalletAccounts({
+      if (state.selectedWallet) {
+        const created = await createWalletAccounts({
           walletId: state.selectedWallet.walletId,
-          accounts: [newAccount],
+          accounts: ["ADDRESS_FORMAT_ETHEREUM"],
         })
-        if (response && user?.organization.organizationId) {
-          // We create a new account object here to skip fetching the full account details from the server
-          const account: Account = {
-            ...newAccount,
-            organizationId: user?.organization.organizationId,
-            walletId: state.selectedWallet?.walletId,
-            walletAccountId: "",
-            createdAt: {
-              seconds: new Date().toISOString(),
-              nanos: new Date().toISOString(),
-            },
-            updatedAt: {
-              seconds: new Date().toISOString(),
-              nanos: new Date().toISOString(),
-            },
-            address: getAddress(response.addresses[0]),
-            balance: undefined,
-          }
-
-          dispatch({ type: "ADD_ACCOUNT", payload: account })
+        const createdAddress = Array.isArray(created) ? created[0] : created
+        if (createdAddress) {
+          pendingSelectAccountAddressRef.current = getAddress(createdAddress)
         }
+        await refreshWallets()
       }
     } catch (error) {
       dispatch({
@@ -266,19 +261,15 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const newWallet = async (walletName?: string) => {
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      if (indexedDbClient) {
-        const { walletId } = await indexedDbClient.createWallet({
-          walletName: walletName || "New Wallet",
-          accounts: DEFAULT_ETHEREUM_ACCOUNTS,
-        })
-        if (walletId && user?.organization.organizationId) {
-          const wallet = await server.getWallet(
-            walletId,
-            user?.organization.organizationId
-          )
-          dispatch({ type: "ADD_WALLET", payload: wallet })
-        }
+      const walletId = await createWallet({
+        walletName: walletName || "New Wallet",
+        accounts: ["ADDRESS_FORMAT_ETHEREUM"],
+      })
+      if (walletId) {
+        // Optimistic selection by wallet id; actual wallet object will be selected after refresh
+        pendingSelectWalletIdRef.current = walletId
       }
+      await refreshWallets()
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Failed to create new wallet" })
     } finally {
@@ -289,13 +280,13 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const selectWallet = (wallet: Wallet) => {
     dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
     setPreferredWallet({
-      userId: user?.id || "",
+      userId: user?.userId || "",
       walletId: wallet.walletId,
     })
   }
 
   const selectAccount = async (account: Account) => {
-    const balance = await getBalance(account.address)
+    const balance = await getCachedBalance(account.address)
     dispatch({
       type: "SET_SELECTED_ACCOUNT",
       payload: { ...account, balance },

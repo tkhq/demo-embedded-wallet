@@ -2,7 +2,6 @@ import { fundWallet as serverFundWallet } from "@/actions/turnkey"
 import { TurnkeyBrowserClient } from "@turnkey/sdk-browser"
 import { TurnkeyServerClient } from "@turnkey/sdk-server"
 import { createAccount } from "@turnkey/viem"
-import { WalletInterface } from "@turnkey/wallet-stamper"
 import {
   Alchemy,
   AlchemyMinedTransactionsAddress,
@@ -26,10 +25,11 @@ import { sepolia } from "viem/chains"
 
 import { env } from "@/env.mjs"
 import type { AlchemyMinedTransaction, Transaction } from "@/types/web3"
-import { turnkeyConfig } from "@/config/turnkey"
 
 import { showTransactionToast } from "./toast"
 import { truncateAddress } from "./utils"
+
+const alchemyRpcUrl = `https://eth-sepolia.g.alchemy.com/v2/${env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
 
 let publicClient: PublicClient
 
@@ -37,7 +37,7 @@ export const getPublicClient = () => {
   if (!publicClient) {
     publicClient = createPublicClient({
       chain: sepolia,
-      transport: http(turnkeyConfig.rpcUrl),
+      transport: http(alchemyRpcUrl),
     })
   }
   return publicClient
@@ -261,7 +261,7 @@ export const getTurnkeyWalletClient = async (
   const client = createWalletClient({
     account: turnkeyAccount as Account,
     chain: sepolia,
-    transport: http(turnkeyConfig.rpcUrl),
+    transport: http(alchemyRpcUrl),
   })
 
   return client

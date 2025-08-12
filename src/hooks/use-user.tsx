@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation"
 import { useTurnkey } from "@turnkey/sdk-react"
 
 import { UserSession } from "@/types/turnkey"
-import { getSessionFromStorage } from "@/lib/storage"
 
 export const useUser = () => {
   const { turnkey, indexedDbClient } = useTurnkey()
