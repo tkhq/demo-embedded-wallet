@@ -16,7 +16,6 @@ import Jazzicon, { jsNumberForAddress } from "react-jazzicon"
 import { formatEther } from "viem"
 
 import { truncateAddress } from "@/lib/utils"
-import { useUser } from "@/hooks/use-user"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {

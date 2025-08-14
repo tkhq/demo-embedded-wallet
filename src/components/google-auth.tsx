@@ -7,9 +7,8 @@ import {
   GoogleLogin,
   GoogleOAuthProvider,
 } from "@react-oauth/google"
-import { uncompressRawPublicKey } from "@turnkey/crypto"
 import { useTurnkey } from "@turnkey/sdk-react"
-import { sha256, toHex } from "viem"
+import { sha256 } from "viem"
 
 import { env } from "@/env.mjs"
 

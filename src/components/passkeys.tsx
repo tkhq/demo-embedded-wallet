@@ -1,37 +1,37 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getAuthenticator, getAuthenticators } from "@/actions/turnkey"
-import { useTurnkey } from "@turnkey/sdk-react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 
 import { Authenticator } from "@/types/turnkey"
-import { useUser } from "@/hooks/use-user"
 import { Skeleton } from "@/components/ui/skeleton"
 
 import AddPasskey from "./add-passkey"
 import { PasskeyItem } from "./passkey-item"
 
 export function Passkeys() {
-  const { indexedDbClient } = useTurnkey()
-  const { user } = useUser()
+  const { httpClient, user, session } = useTurnkey()
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([])
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     if (user) {
       setLoading(true)
-      getAuthenticators(user.id, user.organization.organizationId).then(
-        (authenticators) => {
+      httpClient
+        ?.getAuthenticators({
+          userId: user.userId,
+          organizationId: session?.organizationId ?? "",
+        })
+        .then(({ authenticators }) => {
           setAuthenticators(authenticators)
           setLoading(false)
-        }
-      )
+        })
     }
-  }, [user])
+  }, [user, session, httpClient])
 
   const removeAuthenticator = async (authenticatorId: string) => {
-    const authenticatorResponse = await indexedDbClient?.deleteAuthenticators({
-      userId: `${user?.id}`,
+    const authenticatorResponse = await httpClient?.deleteAuthenticators({
+      userId: `${user?.userId}`,
       authenticatorIds: [authenticatorId],
     })
     if (authenticatorResponse) {
@@ -43,14 +43,15 @@ export function Passkeys() {
   }
 
   const onPasskeyAdded = async (authenticatorId: string) => {
-    if (!user?.organization.organizationId) return
+    if (!session?.organizationId) return
 
-    const authenticator = await getAuthenticator(
-      authenticatorId,
-      user?.organization.organizationId
-    )
+    const { authenticator } =
+      (await httpClient?.getAuthenticator({
+        authenticatorId: authenticatorId,
+        organizationId: session?.organizationId ?? "",
+      })) || {}
     if (authenticator) {
-      setAuthenticators((prev) => [...prev, authenticator])
+      setAuthenticators((prev) => [...prev, authenticator as Authenticator])
     }
   }
 
@@ -65,7 +66,7 @@ export function Passkeys() {
           <Skeleton className="h-[74px] w-full animate-pulse" />
         ) : (
           <div className="space-y-4">
-            {authenticators.map((authenticator, index) => (
+            {authenticators.map((authenticator) => (
               <PasskeyItem
                 key={authenticator.authenticatorId}
                 name={authenticator.authenticatorName}
@@ -81,7 +82,7 @@ export function Passkeys() {
           </div>
         )}
         {!loading && authenticators.length === 0 && (
-          <p className="py-4 text-center text-muted-foreground">
+          <p className="text-muted-foreground py-4 text-center">
             No passkeys added yet.
           </p>
         )}

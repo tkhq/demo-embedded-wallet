@@ -2,10 +2,10 @@
 
 import { useCallback, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useTurnkey } from "@turnkey/react-wallet-kit"
-import { REGEXP_ONLY_DIGITS } from "input-otp"
+import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit"
 import { toast } from "sonner"
 
+import { customWallet } from "@/config/turnkey"
 import { LoadingButton } from "@/components/ui/button.loader"
 import {
   Card,
@@ -20,16 +20,16 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
-import { InverseAuthGuard } from "@/components/auth-guard"
 import { Icons } from "@/components/icons"
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { httpClient, signUpWithPasskey } = useTurnkey()
+  const { httpClient, signUpWithPasskey, completeOtp } = useTurnkey()
 
   const otpId = searchParams.get("id") || ""
   const email = searchParams.get("email") || ""
+  const type = (searchParams.get("type") || "").toLowerCase()
 
   const [code, setCode] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -37,7 +37,7 @@ export default function VerifyEmailPage() {
   const isSixDigits = useMemo(() => code.length === 6, [code])
 
   const handleVerify = useCallback(async () => {
-    if (!otpId || !email) {
+    if (!otpId || !email || (type !== "passkey" && type !== "email")) {
       toast.error("Missing verification context. Please restart sign in.")
       router.replace("/")
       return
@@ -45,22 +45,44 @@ export default function VerifyEmailPage() {
 
     try {
       setSubmitting(true)
-      const res = await httpClient?.proxyVerifyOtp({ otpId, otpCode: code })
-      if (!res?.verificationToken) {
-        toast.error("Verification failed. Try again.")
-        return
+      if (type === "passkey") {
+        const res = await httpClient?.proxyVerifyOtp({ otpId, otpCode: code })
+        if (!res?.verificationToken) {
+          toast.error("Verification failed. Try again.")
+          return
+        }
+
+        await signUpWithPasskey({
+          createSubOrgParams: {
+            customWallet,
+            verificationToken: res.verificationToken,
+            userEmail: email,
+          },
+        })
+        router.replace("/dashboard")
+      } else if (type === "email") {
+        // completeOtp both verifies and logs in (or signs up) the user on the server
+        // Note: The SDK type shows completeOtp; the proxy method may be named proxyCompleteOtp if exposed.
+        // We call through httpClient to leverage the proxy/session handling.
+        // const complete =
+        //   (httpClient as any)?.completeOtp ||
+        //   (httpClient as any)?.proxyCompleteOtp
+        // if (!complete) {
+        //   throw new Error("Email OTP flow is not available in this build.")
+        // }
+
+        await completeOtp({
+          otpId,
+          otpCode: code,
+          contact: email,
+          otpType: OtpType.Email,
+          createSubOrgParams: {
+            customWallet,
+            userEmail: email,
+          },
+        })
+        router.replace("/dashboard")
       }
-
-      // Proceed to passkey signup post verification
-      await signUpWithPasskey({
-        createSubOrgParams: {
-          verificationToken: res.verificationToken,
-          userEmail: email,
-        },
-      })
-
-      // Route to dashboard; AuthGuard will also handle redirects
-      router.replace("/dashboard")
     } catch (err: any) {
       const message: string = err?.message || "Verification error"
       if (message.toLowerCase().includes("invalid otp")) {

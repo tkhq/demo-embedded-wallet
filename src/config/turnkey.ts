@@ -39,7 +39,7 @@ const {
 //   rpcUrl: `https://eth-sepolia.g.alchemy.com/v2/${env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
 // }
 
-const customWallet = {
+export const customWallet = {
   walletName: "Default Wallet",
   walletAccounts: [
     {
@@ -53,13 +53,13 @@ const customWallet = {
 
 export const turnkeyConfig: TurnkeyProviderConfig = {
   organizationId: NEXT_PUBLIC_ORGANIZATION_ID,
-  authProxyId: NEXT_PUBLIC_AUTH_PROXY_ID,
+  authProxyConfigId: NEXT_PUBLIC_AUTH_PROXY_ID,
   authProxyUrl: NEXT_PUBLIC_AUTH_PROXY_URL,
   apiBaseUrl: NEXT_PUBLIC_BASE_URL,
   auth: {
     autoRefreshSession: true,
-    oAuthConfig: {
-      oAuthRedirectUri: NEXT_PUBLIC_BASE_URL,
+    oauthConfig: {
+      oauthRedirectUri: NEXT_PUBLIC_BASE_URL,
       googleClientId: NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID,
       appleClientId: NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID,
       facebookClientId: NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
@@ -74,7 +74,7 @@ export const turnkeyConfig: TurnkeyProviderConfig = {
         userName: "Email User",
         customWallet,
       },
-      oAuth: {
+      oauth: {
         userName: "OAuth User",
         customWallet,
       },

@@ -1,8 +1,7 @@
 import { useState } from "react"
-import { useTurnkey } from "@turnkey/sdk-react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { toast } from "sonner"
 
-import { useUser } from "@/hooks/use-user"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,45 +18,25 @@ export default function AddPasskey({
 }: {
   onPasskeyAdded: (authenticatorId: string) => void
 }) {
-  const { passkeyClient, indexedDbClient } = useTurnkey()
-  const { user } = useUser()
+  const { user, handleAddPasskey } = useTurnkey()
+
   const [open, setOpen] = useState(false)
   const [passkeyName, setPasskeyName] = useState("")
 
-  const handleAddPasskey = async () => {
+  const _handleAddPasskey = async () => {
     if (!user) {
       return
     }
 
-    const credential = await passkeyClient?.createUserPasskey({
-      publicKey: {
-        rp: {
-          name: "Turnkey - Demo Embedded Wallet",
-        },
-        user: {
-          name: user?.name,
-          displayName: user?.name,
-        },
-      },
+    const [authenticatorId] = await handleAddPasskey({
+      name: passkeyName,
+      displayName: passkeyName,
+      userId: user?.userId,
     })
 
-    if (credential) {
-      const authenticatorsResponse =
-        await indexedDbClient?.createAuthenticators({
-          authenticators: [
-            {
-              authenticatorName: passkeyName,
-              challenge: credential.encodedChallenge,
-              attestation: credential.attestation,
-            },
-          ],
-          userId: `${user?.id}`,
-        })
-
-      if (authenticatorsResponse?.activity.id) {
-        toast.success("Passkey added!")
-        onPasskeyAdded(authenticatorsResponse.authenticatorIds[0])
-      }
+    if (authenticatorId) {
+      toast.success("Passkey added!")
+      onPasskeyAdded(authenticatorId)
     }
     setOpen(false)
   }
@@ -96,7 +75,7 @@ export default function AddPasskey({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleAddPasskey} disabled={!passkeyName}>
+          <Button onClick={_handleAddPasskey} disabled={!passkeyName}>
             Add Passkey
           </Button>
         </div>

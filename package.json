@@ -28,7 +28,7 @@
     "@turnkey/crypto": "^2.4.0",
     "@turnkey/encoding": "^0.5.0",
     "@turnkey/http": "^3.4.2",
-    "@turnkey/react-wallet-kit": "https://pkg.csb.dev/tkhq/sdk/commit/1eea2099/@turnkey/react-wallet-kit",
+    "@turnkey/react-wallet-kit": "1.0.0-beta.0",
     "@turnkey/sdk-browser": "^5.2.1",
     "@turnkey/sdk-react": "^5.2.1",
     "@turnkey/sdk-server": "^4.1.1",

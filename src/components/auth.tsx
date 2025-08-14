@@ -34,7 +34,7 @@ const formSchema = z.object({
 })
 
 function AuthContent() {
-  const { httpClient, loginWithPasskey, signUpWithPasskey, user } = useTurnkey()
+  const { httpClient, loginWithPasskey } = useTurnkey()
   const { initEmailLogin, state, loginWithWallet } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
@@ -47,20 +47,6 @@ function AuthContent() {
       email: "",
     },
   })
-
-  useEffect(() => {
-    console.log("user", user)
-    if (user) {
-      // router.push("/dashboard")
-      // if (email) {
-      //   console.log("updating user email", user.userId, email)
-      //   httpClient?.updateUserEmail({
-      //     userId: user.userId,
-      //     userEmail: email,
-      //   })
-      // }
-    }
-  }, [user, router])
 
   useEffect(() => {
     const qsError = searchParams.get("error")
@@ -77,12 +63,7 @@ function AuthContent() {
       filterType: "EMAIL",
       filterValue: email,
     })
-    // TODO: If account is {} or undefined that means this email is not verified and therefore no account exists
 
-    // TODO: First call initOTP to verify the email
-    // TODO: Then call signUpWithPasskey to create the account
-
-    console.log("account", account?.organizationId)
     // If the user's account exists, we assume they have already created a passkey
     if (account?.organizationId) {
       await loginWithPasskey()
@@ -96,7 +77,9 @@ function AuthContent() {
 
       if (init?.otpId) {
         router.push(
-          `/verify-email?id=${encodeURIComponent(init.otpId)}&email=${encodeURIComponent(email)}`
+          `/verify-email?id=${encodeURIComponent(init.otpId)}&email=${encodeURIComponent(
+            email
+          )}&type=passkey`
         )
       }
     }
@@ -106,8 +89,22 @@ function AuthContent() {
 
   const handleEmailLogin = async (email: Email) => {
     setLoadingAction("email")
-    await initEmailLogin(email)
-    setLoadingAction(null)
+    try {
+      const init = await httpClient?.proxyInitOtp({
+        otpType: "OTP_TYPE_EMAIL",
+        contact: email,
+      })
+
+      if (init?.otpId) {
+        router.push(
+          `/verify-email?id=${encodeURIComponent(init.otpId)}&email=${encodeURIComponent(
+            email
+          )}&type=email`
+        )
+      }
+    } finally {
+      setLoadingAction(null)
+    }
   }
 
   const handleWalletLogin = async () => {

@@ -3,19 +3,19 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useWallets } from "@/providers/wallet-provider"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { ArrowLeft, Mail } from "lucide-react"
 import { useLocalStorage } from "usehooks-ts"
 
 import { PreferredWallet, Wallet } from "@/types/turnkey"
 import { PREFERRED_WALLET_KEY } from "@/lib/constants"
-import { useUser } from "@/hooks/use-user"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Passkeys } from "@/components/passkeys"
 
 export default function Settings() {
   const router = useRouter()
-  const { user } = useUser()
+  const { user } = useTurnkey()
   const [preferredWalletSetting, setPreferredWalletSetting] =
     useLocalStorage<PreferredWallet>(PREFERRED_WALLET_KEY, {
       userId: "",
@@ -57,13 +57,13 @@ export default function Settings() {
           <CardContent className="space-y-6">
             <div>
               <h3 className="mb-2 font-semibold sm:text-lg">Email</h3>
-              <Card className="flex items-center gap-2 rounded-md bg-card p-3 sm:justify-between sm:gap-0">
+              <Card className="bg-card flex items-center gap-2 rounded-md p-3 sm:justify-between sm:gap-0">
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-4 w-4 text-muted-foreground sm:h-5 sm:w-5" />
+                  <Mail className="text-muted-foreground h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="hidden sm:block">Email</span>
                 </div>
-                <span className=" text-xs text-muted-foreground sm:text-base">
-                  {user?.email}
+                <span className="text-muted-foreground text-xs sm:text-base">
+                  {user?.userEmail}
                 </span>
               </Card>
             </div>
