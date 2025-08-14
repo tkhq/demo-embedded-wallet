@@ -34,7 +34,7 @@ const formSchema = z.object({
 })
 
 function AuthContent() {
-  const { httpClient, loginWithPasskey } = useTurnkey()
+  const { httpClient, loginWithPasskey, user } = useTurnkey()
   const { initEmailLogin, state, loginWithWallet } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
@@ -112,6 +112,13 @@ function AuthContent() {
     await loginWithWallet()
     setLoadingAction(null)
   }
+
+  // Redirect to dashboard when user session is established
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard")
+    }
+  }, [user, router])
 
   return (
     <>
