@@ -1,66 +1,39 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useAuth } from "@/providers/auth-provider"
-import {
-  CredentialResponse,
-  GoogleLogin,
-  GoogleOAuthProvider,
-} from "@react-oauth/google"
-import { useTurnkey } from "@turnkey/sdk-react"
-import { sha256 } from "viem"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
+import { toast } from "sonner"
 
-import { env } from "@/env.mjs"
-
-import { Skeleton } from "./ui/skeleton"
+import { LoadingButton } from "@/components/ui/button.loader"
 
 const GoogleAuth = () => {
-  const { indexedDbClient } = useTurnkey()
-  const clientId = env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
+  const router = useRouter()
+  const { handleGoogleOauth } = useTurnkey()
+  const [loading, setLoading] = useState(false)
 
-  const [nonce, setNonce] = useState("")
-  const { loginWithGoogle } = useAuth()
-
-  useEffect(() => {
-    const getPublicKey = async () => {
-      const publicKey = await indexedDbClient?.getPublicKey()
-
-      if (publicKey) {
-        const hashedPublicKey = sha256(publicKey as `0x${string}`).replace(
-          /^0x/,
-          ""
-        )
-
-        setNonce(hashedPublicKey)
-      }
-    }
-
-    getPublicKey()
-  }, [indexedDbClient])
-
-  const onSuccess = (credentialResponse: CredentialResponse) => {
-    if (credentialResponse.credential) {
-      loginWithGoogle(credentialResponse.credential as string)
+  const onClick = async () => {
+    setLoading(true)
+    try {
+      await handleGoogleOauth({ openInPage: false })
+      router.push("/dashboard")
+    } catch (error: any) {
+      const message: string = error?.message || "Google login failed"
+      toast.error(message)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      {nonce ? (
-        <GoogleLogin
-          nonce={nonce}
-          width={235}
-          containerProps={{
-            className: "w-full bg-white flex justify-center rounded-md",
-          }}
-          onSuccess={onSuccess}
-          useOneTap={false}
-          auto_select={false}
-        />
-      ) : (
-        <Skeleton className="h-10 w-full" />
-      )}
-    </GoogleOAuthProvider>
+    <LoadingButton
+      type="button"
+      className="w-full font-semibold"
+      loading={loading}
+      onClick={onClick}
+    >
+      Continue with Google
+    </LoadingButton>
   )
 }
 
