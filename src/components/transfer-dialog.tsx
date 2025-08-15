@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react"
 import { useTransactions } from "@/providers/transactions-provider"
 import { useWallets } from "@/providers/wallet-provider"
-import { useTurnkey } from "@turnkey/sdk-react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import {
   AlertCircle,
   ArrowDown,
@@ -14,7 +14,16 @@ import {
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { useIsClient, useMediaQuery } from "usehooks-ts"
-import { formatEther, getAddress, parseEther, TransactionRequest } from "viem"
+import {
+  formatEther,
+  getAddress,
+  Hex,
+  parseEther,
+  parseGwei,
+  serializeTransaction,
+  TransactionRequest,
+} from "viem"
+import { sepolia } from "viem/chains"
 
 import { showTransactionToast } from "@/lib/toast"
 import { truncateAddress } from "@/lib/utils"
@@ -54,7 +63,7 @@ export default function TransferDialog() {
   const { state } = useWallets()
   const { selectedAccount } = state
   const { ethPrice } = useTokenPrice()
-  const { indexedDbClient } = useTurnkey()
+  const { httpClient, signTransaction, wallets } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
   const isDesktop = useMediaQuery("(min-width: 564px)")
   const isClient = useIsClient()
@@ -93,17 +102,17 @@ export default function TransferDialog() {
 
   useEffect(() => {
     const initializeWalletClient = async () => {
-      if (!selectedAccount || !indexedDbClient) return
+      if (!selectedAccount || !httpClient) return
 
       const walletClient = await getTurnkeyWalletClient(
-        indexedDbClient,
+        httpClient as any,
         selectedAccount.address
       )
       setWalletClient(walletClient)
     }
 
     initializeWalletClient()
-  }, [selectedAccount, indexedDbClient])
+  }, [selectedAccount, httpClient])
 
   useEffect(() => {
     const ethAmountParsed = parseFloat(ethAmount || "0")
@@ -144,7 +153,33 @@ export default function TransferDialog() {
     try {
       const publicClient = getPublicClient()
       setIsOpen(false)
-      const hash = await walletClient.sendTransaction(transactionRequest)
+
+      const unsignedTransaction = serializeTransaction({
+        chainId: sepolia.id,
+        gas: transactionRequest.gas,
+        maxFeePerGas: transactionRequest.maxFeePerGas,
+        maxPriorityFeePerGas: transactionRequest.maxPriorityFeePerGas,
+        nonce: transactionRequest.nonce,
+        to: transactionRequest.to,
+        value: transactionRequest.value,
+      })
+
+      console.log("unsignedTransaction", unsignedTransaction)
+
+      const walletAccount = wallets[0]?.accounts[0]
+
+      const signedTransaction = await signTransaction({
+        unsignedTransaction,
+        transactionType: "TRANSACTION_TYPE_ETHEREUM",
+        walletAccount,
+      })
+
+      console.log("signedTransaction", signedTransaction)
+
+      const hash = await publicClient.sendRawTransaction({
+        serializedTransaction: signedTransaction as Hex,
+      })
+      console.log("hash", hash)
       addPendingTransaction({
         hash,
         ...transactionRequest,

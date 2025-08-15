@@ -25,6 +25,7 @@ import { sepolia } from "viem/chains"
 
 import { env } from "@/env.mjs"
 import type { AlchemyMinedTransaction, Transaction } from "@/types/web3"
+import { turnkeyConfig } from "@/config/turnkey"
 
 import { showTransactionToast } from "./toast"
 import { truncateAddress } from "./utils"
@@ -253,7 +254,7 @@ export const getTurnkeyWalletClient = async (
   const turnkeyAccount = await createAccount({
     // @ts-ignore - need to reconcile the TurnkeySDKClientConfig type between the sdk-server & sdk-browser SDKw
     client: turnkeyClient,
-    organizationId: process.env.ORGANIZATION_ID!,
+    organizationId: turnkeyConfig.organizationId,
     signWith,
   })
 
