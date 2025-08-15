@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { Suspense, useCallback, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit"
 import { toast } from "sonner"
@@ -23,6 +23,14 @@ import {
 import { Icons } from "@/components/icons"
 
 export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
+  )
+}
+
+function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { httpClient, signUpWithPasskey, completeOtp } = useTurnkey()
