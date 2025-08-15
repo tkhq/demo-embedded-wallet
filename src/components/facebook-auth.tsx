@@ -24,6 +24,7 @@ const FacebookAuth = () => {
       {ready ? (
         <div className="flex w-full justify-center">
           <Button
+            disabled
             variant="outline"
             className="flex w-[235px] items-center justify-between"
             onClick={onClick}
