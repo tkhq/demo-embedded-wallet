@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { useWallets } from "@/providers/wallet-provider"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -15,7 +16,6 @@ import Jazzicon, { jsNumberForAddress } from "react-jazzicon"
 import { formatEther } from "viem"
 
 import { truncateAddress } from "@/lib/utils"
-import { useUser } from "@/hooks/use-user"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -52,11 +52,11 @@ function AccountAvatar({ address }: { address: string | undefined }) {
 
 export default function Account() {
   const router = useRouter()
-  const { logout } = useAuth()
-  const { user } = useUser()
+
   const { state, newWallet, newWalletAccount, selectWallet, selectAccount } =
     useWallets()
-  const { selectedWallet, selectedAccount, wallets } = state
+  const { wallets, selectedWallet, selectedAccount } = state
+  const { logout, user, authState } = useTurnkey()
 
   const [isOpen, setIsOpen] = useState(false)
   const [isNewWalletMode, setIsNewWalletMode] = useState(false)
@@ -86,10 +86,6 @@ export default function Account() {
     [newWalletName, newWallet]
   )
 
-  const handleLogout = () => {
-    logout()
-  }
-
   useEffect(() => {
     setTimeout(() => {
       setIsNewWalletMode(false)
@@ -101,16 +97,16 @@ export default function Account() {
       <DropdownMenuTrigger className="dark" asChild>
         <Button
           variant="outline"
-          className="h-full w-min justify-between gap-3 bg-none text-foreground"
+          className="text-foreground h-full w-min justify-between gap-3 bg-none"
         >
           <div className="flex items-center gap-3">
             <AccountAvatar address={selectedAccount?.address} />
             {selectedWallet?.walletName && selectedAccount?.address ? (
               <div className="text-left">
-                <div className="text-sm font-semibold ">
+                <div className="text-sm font-semibold">
                   {selectedWallet?.walletName}
                 </div>
-                <div className="text-xs font-semibold text-muted-foreground">
+                <div className="text-muted-foreground text-xs font-semibold">
                   {selectedAccount?.address
                     ? truncateAddress(selectedAccount?.address)
                     : ""}
@@ -118,28 +114,28 @@ export default function Account() {
               </div>
             ) : (
               <div className="flex flex-col gap-1">
-                <Skeleton className="h-3 w-12  rounded-[3px]" />
+                <Skeleton className="h-3 w-12 rounded-[3px]" />
                 <Skeleton className="h-3 w-[120px] rounded-[3px]" />
               </div>
             )}
           </div>
           {isOpen ? (
-            <ChevronUpIcon className="hidden h-4 w-4 text-muted-foreground sm:block" />
+            <ChevronUpIcon className="text-muted-foreground hidden h-4 w-4 sm:block" />
           ) : (
-            <ChevronDownIcon className="hidden h-4 w-4 text-muted-foreground sm:block" />
+            <ChevronDownIcon className="text-muted-foreground hidden h-4 w-4 sm:block" />
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className=" w-80 bg-background text-foreground"
+        className="bg-background text-foreground w-80"
       >
         <DropdownMenuLabel className="dark flex w-full items-center gap-2">
           <AccountAvatar address={selectedAccount?.address} />
           <div className="flex flex-col">
-            <span className=" font-semibold">{user?.name}</span>
-            <span className="text-xs text-muted-foreground">
-              {user?.email || ""}
+            <span className="font-semibold">{user?.userName}</span>
+            <span className="text-muted-foreground text-xs">
+              {user?.userEmail || ""}
             </span>
           </div>
         </DropdownMenuLabel>
@@ -169,7 +165,7 @@ export default function Account() {
               value={newWalletName}
               onChange={(e) => setNewWalletName(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()} // Prevent dropdown menu from handling key events
-              className="w-full bg-transparent px-0 py-1 text-sm text-foreground placeholder-muted-foreground focus:outline-none"
+              className="text-foreground placeholder-muted-foreground w-full bg-transparent px-0 py-1 text-sm focus:outline-hidden"
             />
             <Button
               disabled={!newWalletName}
@@ -203,13 +199,13 @@ export default function Account() {
               {account.address ? truncateAddress(account.address) : ""}
             </span>
 
-            <div className="flex items-center gap-1 rounded-full bg-muted-foreground/10 px-2 py-0.5">
+            <div className="bg-muted-foreground/10 flex items-center gap-1 rounded-full px-2 py-0.5">
               <span className="text-sm font-semibold">
-                <span className="font-semibold text-muted-foreground">~</span>
+                <span className="text-muted-foreground font-semibold">~</span>
                 {account.balance
                   ? Number(formatEther(account.balance)).toFixed(2)
                   : "0"}
-                <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                <span className="text-muted-foreground ml-0.5 text-xs font-normal">
                   ETH
                 </span>
               </span>
@@ -227,7 +223,7 @@ export default function Account() {
           <SettingsIcon className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleLogout}>
+        <DropdownMenuItem onSelect={() => logout()}>
           <LogOutIcon className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

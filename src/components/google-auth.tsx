@@ -1,67 +1,50 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/providers/auth-provider"
-import {
-  CredentialResponse,
-  GoogleLogin,
-  GoogleOAuthProvider,
-} from "@react-oauth/google"
-import { uncompressRawPublicKey } from "@turnkey/crypto"
-import { useTurnkey } from "@turnkey/sdk-react"
-import { sha256, toHex } from "viem"
+import { SiGoogle } from "@icons-pack/react-simple-icons"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
+import { toast } from "sonner"
 
-import { env } from "@/env.mjs"
-
-import { Skeleton } from "./ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const GoogleAuth = () => {
-  const { indexedDbClient } = useTurnkey()
-  const clientId = env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID
-
-  const [nonce, setNonce] = useState("")
-  const { loginWithGoogle } = useAuth()
+  const { handleGoogleOauth, clientState } = useTurnkey()
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const getPublicKey = async () => {
-      const publicKey = await indexedDbClient?.getPublicKey()
+    setReady(!!clientState)
+  }, [clientState])
 
-      if (publicKey) {
-        const hashedPublicKey = sha256(publicKey as `0x${string}`).replace(
-          /^0x/,
-          ""
-        )
-
-        setNonce(hashedPublicKey)
-      }
-    }
-
-    getPublicKey()
-  }, [indexedDbClient])
-
-  const onSuccess = (credentialResponse: CredentialResponse) => {
-    if (credentialResponse.credential) {
-      loginWithGoogle(credentialResponse.credential as string)
+  const onClick = async () => {
+    try {
+      await handleGoogleOauth({ openInPage: false })
+      // Rely on user state change to redirect elsewhere in the app
+    } catch (error: any) {
+      const message: string = error?.message || "Google login failed"
+      toast.error(message)
     }
   }
 
   return (
-    <GoogleOAuthProvider clientId={clientId}>
-      {nonce ? (
-        <GoogleLogin
-          nonce={nonce}
-          width={235}
-          containerProps={{
-            className: "w-full bg-white flex justify-center rounded-md",
-          }}
-          onSuccess={onSuccess}
-          useOneTap={false}
-          auto_select={false}
-        />
+    <>
+      {ready ? (
+        <div className="flex w-full justify-center">
+          <Button
+            variant="outline"
+            className="flex w-[235px] items-center justify-between"
+            onClick={onClick}
+          >
+            <SiGoogle className="h-4 w-4" />
+            <span className="grow text-center font-normal">
+              Continue with Google
+            </span>
+          </Button>
+        </div>
       ) : (
         <Skeleton className="h-10 w-full" />
       )}
-    </GoogleOAuthProvider>
+    </>
   )
 }
 

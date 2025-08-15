@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react"
 import { useTransactions } from "@/providers/transactions-provider"
 import { useWallets } from "@/providers/wallet-provider"
-import { useTurnkey } from "@turnkey/sdk-react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import {
   AlertCircle,
   ArrowDown,
@@ -14,7 +14,16 @@ import {
 } from "lucide-react"
 import QRCode from "react-qr-code"
 import { useIsClient, useMediaQuery } from "usehooks-ts"
-import { formatEther, getAddress, parseEther, TransactionRequest } from "viem"
+import {
+  formatEther,
+  getAddress,
+  Hex,
+  parseEther,
+  parseGwei,
+  serializeTransaction,
+  TransactionRequest,
+} from "viem"
+import { sepolia } from "viem/chains"
 
 import { showTransactionToast } from "@/lib/toast"
 import { truncateAddress } from "@/lib/utils"
@@ -33,7 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { RecipientAddressInput } from "./recipient-address"
 import SendTransaction from "./send-transaction"
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
+import { Alert, AlertDescription } from "./ui/alert"
 import {
   Drawer,
   DrawerClose,
@@ -54,7 +63,7 @@ export default function TransferDialog() {
   const { state } = useWallets()
   const { selectedAccount } = state
   const { ethPrice } = useTokenPrice()
-  const { turnkey, indexedDbClient } = useTurnkey()
+  const { httpClient, signTransaction, wallets } = useTurnkey()
   const { addPendingTransaction } = useTransactions()
   const isDesktop = useMediaQuery("(min-width: 564px)")
   const isClient = useIsClient()
@@ -93,17 +102,17 @@ export default function TransferDialog() {
 
   useEffect(() => {
     const initializeWalletClient = async () => {
-      if (!selectedAccount || !indexedDbClient) return
+      if (!selectedAccount || !httpClient) return
 
       const walletClient = await getTurnkeyWalletClient(
-        indexedDbClient,
+        httpClient as any,
         selectedAccount.address
       )
       setWalletClient(walletClient)
     }
 
     initializeWalletClient()
-  }, [selectedAccount, indexedDbClient])
+  }, [selectedAccount, httpClient])
 
   useEffect(() => {
     const ethAmountParsed = parseFloat(ethAmount || "0")
@@ -144,7 +153,29 @@ export default function TransferDialog() {
     try {
       const publicClient = getPublicClient()
       setIsOpen(false)
-      const hash = await walletClient.sendTransaction(transactionRequest)
+
+      const unsignedTransaction = serializeTransaction({
+        chainId: sepolia.id,
+        gas: transactionRequest.gas,
+        maxFeePerGas: transactionRequest.maxFeePerGas,
+        maxPriorityFeePerGas: transactionRequest.maxPriorityFeePerGas,
+        nonce: transactionRequest.nonce,
+        to: transactionRequest.to,
+        value: transactionRequest.value,
+      })
+
+      const walletAccount = wallets[0]?.accounts[0]
+
+      const signedTransaction = await signTransaction({
+        unsignedTransaction,
+        transactionType: "TRANSACTION_TYPE_ETHEREUM",
+        walletAccount,
+      })
+
+      const hash = await publicClient.sendRawTransaction({
+        serializedTransaction: signedTransaction as Hex,
+      })
+
       addPendingTransaction({
         hash,
         ...transactionRequest,
@@ -206,7 +237,7 @@ export default function TransferDialog() {
             />
           </div>
 
-          <div className="text-lg  text-muted-foreground">~${amountUSD}</div>
+          <div className="text-muted-foreground text-lg">~${amountUSD}</div>
         </div>
 
         <div className="flex items-center">
@@ -236,29 +267,29 @@ export default function TransferDialog() {
               </g>
             </svg>
           </div>
-          <div className="flex-grow">
+          <div className="grow">
             <div className="font-semibold">Send</div>
-            <div className="text-sm ">Ethereum (Sepolia)</div>
+            <div className="text-sm">Ethereum (Sepolia)</div>
           </div>
           <div className="text-right">
             <div className="font-semibold">
               {selectedAccount?.balance
                 ? Number(formatEther(selectedAccount?.balance)).toFixed(4)
                 : "0"}{" "}
-              <span className="text-sm text-muted-foreground">ETH</span>
+              <span className="text-muted-foreground text-sm">ETH</span>
             </div>
-            <div className="text-sm ">Balance</div>
+            <div className="text-sm">Balance</div>
           </div>
           {/* TODO: Could add this back such that when clicked it displays list of wallet accounts to send from */}
           {/* <ChevronRight className="ml-2 " size={20} /> */}
         </div>
 
-        <div className="flex items-center rounded-lg bg-muted p-2  sm:p-4">
+        <div className="bg-muted flex items-center rounded-lg p-2 sm:p-4">
           {/* <Input
             placeholder="Enter recipient address"
             value={recipientAddress}
             onChange={(e) => setRecipientAddress(e.target.value)}
-            className=" flex-grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
+            className=" grow border-none bg-transparent px-2 text-xs placeholder-[#8e8e93]  focus-visible:ring-0 focus-visible:ring-offset-0 sm:px-3 sm:py-2 sm:text-sm"
           /> */}
           <RecipientAddressInput initialAddress={recipientAddress} />
         </div>
@@ -287,7 +318,7 @@ export default function TransferDialog() {
         </Button>
       </div>
 
-      <div className="mx-auto w-2/5 rounded-lg dark:bg-white sm:w-8/12">
+      <div className="mx-auto w-2/5 rounded-lg sm:w-8/12 dark:bg-white">
         <QRCode
           style={{ height: "auto", maxWidth: "100%", width: "100%" }}
           value={selectedAccount?.address || ""}
@@ -310,9 +341,9 @@ export default function TransferDialog() {
           </Button>
         </div>
       </div>
-      <Alert className="p-3 pb-2 ">
+      <Alert className="p-3 pb-2">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription className="text-xs text-muted-foreground">
+        <AlertDescription className="text-muted-foreground text-xs">
           This address can only receive testnet Ethereum (Sepolia). Sending any
           other asset to this address will result in loss of funds.
         </AlertDescription>
@@ -321,11 +352,11 @@ export default function TransferDialog() {
   )
 
   const TransferContent = ({ className }: React.ComponentProps<"div">) => (
-    <Card className="w-full border-0  shadow-none">
+    <Card className="w-full border-0 shadow-none">
       <CardContent className="p-4">
         {currentView === "send" && (
           <Tabs defaultValue={selectedAction} className="w-full">
-            <TabsList className="mb-6 grid w-full grid-cols-2 ">
+            <TabsList className="mb-6 grid w-full grid-cols-2">
               <TabsTrigger value="send">Send</TabsTrigger>
               <TabsTrigger value="receive">Receive</TabsTrigger>
             </TabsList>

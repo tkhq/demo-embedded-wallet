@@ -64,7 +64,7 @@ export const ValueInput: React.FC<ValueInputProps> = ({
         value={value}
         onChange={handleChange}
         placeholder={placeholder}
-        className="bg-transparent font-semibold placeholder-muted focus:outline-none"
+        className="bg-transparent font-semibold placeholder-muted focus:outline-hidden"
         style={{ width: `${inputWidth}px` }}
       />
       <span className="ml-1 text-gray-400">{label}</span>

@@ -8,7 +8,7 @@ interface FeatureProps {
 
 export default function Feature({ title, icon, children }: FeatureProps) {
   return (
-    <div className="grid grid-cols-[1fr,8fr] items-start">
+    <div className="grid grid-cols-[1fr_8fr] items-start">
       <div className="mt-[3px]">{icon}</div>
       <div className="space-y-2">
         <h2 className="text-xl font-bold leading-none">{title}</h2>

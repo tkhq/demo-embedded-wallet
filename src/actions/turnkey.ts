@@ -30,6 +30,7 @@ const {
   TURNKEY_WARCHEST_API_PRIVATE_KEY,
   TURNKEY_WARCHEST_ORGANIZATION_ID,
   WARCHEST_PRIVATE_KEY_ID,
+  NEXT_PUBLIC_BASE_URL,
 } = env
 
 const stamper = new ApiKeyStamper({
@@ -38,7 +39,7 @@ const stamper = new ApiKeyStamper({
 })
 
 const client = new TurnkeyServerClient({
-  apiBaseUrl: turnkeyConfig.apiBaseUrl,
+  apiBaseUrl: NEXT_PUBLIC_BASE_URL,
   organizationId: turnkeyConfig.organizationId,
   stamper,
 })
@@ -434,7 +435,7 @@ const warchestStamper = new ApiKeyStamper({
 })
 
 const warchestClient = new TurnkeyServerClient({
-  apiBaseUrl: turnkeyConfig.apiBaseUrl,
+  apiBaseUrl: NEXT_PUBLIC_BASE_URL,
   organizationId: TURNKEY_WARCHEST_ORGANIZATION_ID,
   stamper: warchestStamper,
 })
