@@ -164,8 +164,6 @@ export default function TransferDialog() {
         value: transactionRequest.value,
       })
 
-      console.log("unsignedTransaction", unsignedTransaction)
-
       const walletAccount = wallets[0]?.accounts[0]
 
       const signedTransaction = await signTransaction({
@@ -174,12 +172,10 @@ export default function TransferDialog() {
         walletAccount,
       })
 
-      console.log("signedTransaction", signedTransaction)
-
       const hash = await publicClient.sendRawTransaction({
         serializedTransaction: signedTransaction as Hex,
       })
-      console.log("hash", hash)
+
       addPendingTransaction({
         hash,
         ...transactionRequest,

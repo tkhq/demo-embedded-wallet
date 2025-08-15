@@ -130,7 +130,6 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const pendingSelectAccountAddressRef = useRef<string | null>(null)
 
   useEffect(() => {
-    console.log("session", session)
     if (!session?.organizationId) {
       return
     }
@@ -144,7 +143,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
         })),
       })
     )
-    console.log("normalizedWallets", normalizedWallets)
+
     dispatch({ type: "SET_WALLETS", payload: normalizedWallets })
 
     if (normalizedWallets.length === 0) {

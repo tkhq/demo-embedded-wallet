@@ -57,9 +57,6 @@ export default function Account() {
     useWallets()
   const { wallets, selectedWallet, selectedAccount } = state
   const { logout, user, authState } = useTurnkey()
-  console.log("selectedWallet", selectedWallet)
-  console.log("turnkeyUser", user)
-  console.log("authState", authState)
 
   const [isOpen, setIsOpen] = useState(false)
   const [isNewWalletMode, setIsNewWalletMode] = useState(false)
