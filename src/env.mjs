@@ -18,7 +18,7 @@ export const env = createEnv({
     NEXT_PUBLIC_EXPORT_IFRAME_URL: z.string().optional(),
     NEXT_PUBLIC_IMPORT_IFRAME_URL: z.string().optional(),
     NEXT_PUBLIC_AUTH_PROXY_ID: z.string().min(1),
-    NEXT_PUBLIC_AUTH_PROXY_URL: z.string().min(1),
+    NEXT_PUBLIC_AUTH_PROXY_URL: z.string().min(1).optional(),
   },
   server: {
     NEXT_PUBLIC_RP_ID: z.string().optional(),
