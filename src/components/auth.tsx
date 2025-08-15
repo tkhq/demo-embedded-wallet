@@ -129,7 +129,6 @@ function AuthContent() {
     setIsLoadingProviders(true)
     try {
       const providers = await getWalletProviders()
-
       setWalletProviders(
         providers.filter((p) => p.interfaceType !== "solana") ?? []
       )
