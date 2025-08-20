@@ -10,7 +10,7 @@ import {
 } from "react"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { useLocalStorage } from "usehooks-ts"
-import { getAddress } from "viem"
+import { getAddress, isAddress } from "viem"
 
 import { Account, PreferredWallet, Wallet } from "@/types/turnkey"
 import { PREFERRED_WALLET_KEY } from "@/lib/constants"
@@ -134,15 +134,15 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const normalizedWallets: Wallet[] = (hookWallets ?? []).map(
-      (wallet: any) => ({
-        ...wallet,
-        accounts: (wallet.accounts ?? []).map((account: any) => ({
+    const normalizedWallets: Wallet[] = (hookWallets ?? []).map((wallet) => ({
+      ...wallet,
+      accounts: (wallet.accounts ?? [])
+        .filter((account: any) => isAddress(account.address))
+        .map((account: any) => ({
           ...account,
           address: getAddress(account.address),
         })),
-      })
-    )
+    }))
 
     dispatch({ type: "SET_WALLETS", payload: normalizedWallets })
 
