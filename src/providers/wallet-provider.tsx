@@ -10,7 +10,7 @@ import {
 } from "react"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { useLocalStorage } from "usehooks-ts"
-import { getAddress } from "viem"
+import { getAddress, isAddress } from "viem"
 
 import { Account, PreferredWallet, Wallet } from "@/types/turnkey"
 import { PREFERRED_WALLET_KEY } from "@/lib/constants"
@@ -29,7 +29,7 @@ type Action =
   | { type: "SET_ERROR"; payload: string }
   | { type: "SET_WALLETS"; payload: Wallet[] }
   | { type: "SET_SELECTED_WALLET"; payload: Wallet }
-  | { type: "SET_SELECTED_ACCOUNT"; payload: Account }
+  | { type: "SET_SELECTED_ACCOUNT"; payload: Account | null }
   | { type: "ADD_WALLET"; payload: Wallet }
   | { type: "ADD_ACCOUNT"; payload: Account }
 
@@ -134,15 +134,15 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const normalizedWallets: Wallet[] = (hookWallets ?? []).map(
-      (wallet: any) => ({
-        ...wallet,
-        accounts: (wallet.accounts ?? []).map((account: any) => ({
+    const normalizedWallets: Wallet[] = (hookWallets ?? []).map((wallet) => ({
+      ...wallet,
+      accounts: (wallet.accounts ?? [])
+        .filter((account: any) => isAddress(account.address))
+        .map((account: any) => ({
           ...account,
           address: getAddress(account.address),
         })),
-      })
-    )
+    }))
 
     dispatch({ type: "SET_WALLETS", payload: normalizedWallets })
 
@@ -278,6 +278,8 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
 
   const selectWallet = (wallet: Wallet) => {
     dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
+    // Clear selected account so the effect can auto-select the first account of the new wallet
+    dispatch({ type: "SET_SELECTED_ACCOUNT", payload: null })
     setPreferredWallet({
       userId: user?.userId || "",
       walletId: wallet.walletId,
