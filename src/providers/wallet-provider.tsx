@@ -29,7 +29,7 @@ type Action =
   | { type: "SET_ERROR"; payload: string }
   | { type: "SET_WALLETS"; payload: Wallet[] }
   | { type: "SET_SELECTED_WALLET"; payload: Wallet }
-  | { type: "SET_SELECTED_ACCOUNT"; payload: Account }
+  | { type: "SET_SELECTED_ACCOUNT"; payload: Account | null }
   | { type: "ADD_WALLET"; payload: Wallet }
   | { type: "ADD_ACCOUNT"; payload: Account }
 
@@ -278,6 +278,8 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
 
   const selectWallet = (wallet: Wallet) => {
     dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
+    // Clear selected account so the effect can auto-select the first account of the new wallet
+    dispatch({ type: "SET_SELECTED_ACCOUNT", payload: null })
     setPreferredWallet({
       userId: user?.userId || "",
       walletId: wallet.walletId,
