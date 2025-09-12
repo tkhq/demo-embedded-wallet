@@ -28,7 +28,6 @@ export const customWallet = {
 export const turnkeyConfig: TurnkeyProviderConfig = {
   organizationId: NEXT_PUBLIC_ORGANIZATION_ID,
   authProxyConfigId: NEXT_PUBLIC_AUTH_PROXY_ID,
-  authProxyUrl: NEXT_PUBLIC_AUTH_PROXY_URL,
   apiBaseUrl: NEXT_PUBLIC_BASE_URL,
   auth: {
     autoRefreshSession: true,

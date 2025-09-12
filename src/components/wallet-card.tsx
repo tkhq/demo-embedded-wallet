@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react"
 import { useWallets } from "@/providers/wallet-provider"
 import { ExportType, useTurnkey } from "@turnkey/react-wallet-kit"
-import { CopyIcon, Download, HandCoins, Upload } from "lucide-react"
+import { CopyIcon, Download, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { formatEther } from "viem"
 
 import { truncateAddress } from "@/lib/utils"
-import { fundWallet } from "@/lib/web3"
 import { useTokenPrice } from "@/hooks/use-token-price"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,11 +27,6 @@ export default function WalletCard() {
   const { handleImport, handleExport } = useTurnkey()
   const { selectedWallet, selectedAccount } = state
   const [usdAmount, setUsdAmount] = useState<number | undefined>(undefined)
-
-  const handleFundWallet = async () => {
-    if (!selectedAccount?.address) return
-    await fundWallet(selectedAccount?.address)
-  }
 
   const handleCopyAddress = () => {
     if (selectedAccount?.address) {
@@ -58,10 +52,6 @@ export default function WalletCard() {
         </CardTitle>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <Button onClick={handleFundWallet} className="h-min cursor-pointer">
-            <HandCoins className="mr-2 h-4 w-4" />
-            Add funds
-          </Button>
           <TransferDialog />
 
           <Button variant="outline" onClick={() => handleImport()}>
@@ -111,10 +101,6 @@ export default function WalletCard() {
       </CardContent>
       <CardFooter className="sm:hidden">
         <div className="mx-auto flex w-full flex-col items-center gap-2">
-          <Button className="w-full">
-            <HandCoins className="mr-2 h-4 w-4" />
-            Add funds
-          </Button>
           <TransferDialog />
           <div className="flex w-full items-center gap-2">
             <Button
