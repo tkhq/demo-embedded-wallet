@@ -16,6 +16,61 @@ function scaleFactor(width: number) {
   return 1.1875 - 0.00307 * width + 3.7e-6 * width ** 2 - 1.62e-9 * width ** 3
 }
 
+// Maximum number of digits allowed after the decimal point while typing
+const MAX_DECIMALS = 10
+
+// Sanitizes arbitrary user input into a valid decimal string.
+// - Strict dot-only (commas removed)
+// - Keeps at most one dot
+// - Normalizes leading zeros
+// - Allows a trailing dot as an intermediate state ("1.")
+function sanitizeDecimalInput(raw: string): string {
+  // Remove commas (strict dot-only) and any non-digit/non-dot characters
+  let s = raw.replace(/,/g, "").replace(/[^0-9.]/g, "")
+
+  if (s === "") return ""
+
+  const hadTrailingDot = s.endsWith(".")
+
+  // Keep only the first dot
+  const firstDotIndex = s.indexOf(".")
+  if (firstDotIndex !== -1) {
+    s =
+      s.slice(0, firstDotIndex + 1) +
+      s.slice(firstDotIndex + 1).replace(/\./g, "")
+  }
+
+  const hasDot = s.includes(".")
+
+  const normalizeInteger = (intPart: string) => {
+    const withoutLeading = intPart.replace(/^0+(?=\d)/, "")
+    return withoutLeading === "" ? "0" : withoutLeading
+  }
+
+  if (!hasDot) {
+    const intPart = normalizeInteger(s)
+    return intPart
+  }
+
+  let [intPart, fracPart = ""] = s.split(".")
+
+  // If started with dot, ensure integer becomes 0
+  if (intPart === "") intPart = "0"
+  intPart = normalizeInteger(intPart)
+
+  // Enforce max decimals
+  if (fracPart.length > MAX_DECIMALS) {
+    fracPart = fracPart.slice(0, MAX_DECIMALS)
+  }
+
+  // Allow a trailing dot during typing
+  if (hadTrailingDot && fracPart.length === 0) {
+    return `${intPart}.`
+  }
+
+  return fracPart.length > 0 ? `${intPart}.${fracPart}` : intPart
+}
+
 export const ValueInput: React.FC<ValueInputProps> = ({
   value,
   onValueChange,
@@ -27,17 +82,20 @@ export const ValueInput: React.FC<ValueInputProps> = ({
   const [fontSize, setFontSize] = useState(1)
   const spanRef = useRef<HTMLSpanElement>(null)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const newValue = e.target.value.replace(/[^0-9.]/g, "")
+    const sanitized = sanitizeDecimalInput(e.target.value)
+    onValueChange?.(sanitized)
+  }
 
-    // Allow '0' after the first character
-    let finalValue = newValue
-    if (newValue.length > 1 && newValue[0] === "0" && newValue[1] !== ".") {
-      finalValue = newValue.slice(1)
+  const handleBlur = () => {
+    if (!onValueChange) return
+    if (!value) return
+    if (value === ".") {
+      onValueChange("0")
+      return
     }
-
-    onValueChange?.(finalValue)
+    if (value.endsWith(".")) {
+      onValueChange(value.slice(0, -1))
+    }
   }
 
   useEffect(() => {
@@ -63,14 +121,19 @@ export const ValueInput: React.FC<ValueInputProps> = ({
         type="text"
         value={value}
         onChange={handleChange}
+        onBlur={handleBlur}
         placeholder={placeholder}
-        className="bg-transparent font-semibold placeholder-muted focus:outline-hidden"
+        className="placeholder-muted bg-transparent font-semibold focus:outline-hidden"
         style={{ width: `${inputWidth}px` }}
+        inputMode="decimal"
+        autoComplete="off"
+        spellCheck={false}
+        aria-label={label || "Value"}
       />
       <span className="ml-1 text-gray-400">{label}</span>
       <span
         ref={spanRef}
-        className="invisible absolute left-0 whitespace-pre font-semibold"
+        className="invisible absolute left-0 font-semibold whitespace-pre"
         aria-hidden="true"
       >
         {value || placeholder}
