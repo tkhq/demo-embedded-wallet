@@ -172,8 +172,12 @@ export default function TransferDialog() {
         walletAccount,
       })
 
+      const prefixedTransaction = signedTransaction.startsWith("0x")
+        ? signedTransaction
+        : `0x${signedTransaction}`
+
       const hash = await publicClient.sendRawTransaction({
-        serializedTransaction: signedTransaction as Hex,
+        serializedTransaction: prefixedTransaction as Hex,
       })
 
       addPendingTransaction({
