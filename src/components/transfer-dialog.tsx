@@ -13,6 +13,7 @@ import {
   CopyIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
+import { toast } from "sonner"
 import { useIsClient, useMediaQuery } from "usehooks-ts"
 import {
   formatEther,
@@ -222,6 +223,13 @@ export default function TransferDialog() {
     setRecipientAddress(DEFAULT_RECIPIENT_ADDRESS)
   }
 
+  const handleCopyAddress = () => {
+    if (selectedAccount?.address) {
+      navigator.clipboard.writeText(selectedAccount.address)
+      toast.success("Address copied to clipboard")
+    }
+  }
+
   useEffect(() => {
     if (!isOpen) {
       resetState()
@@ -340,7 +348,7 @@ export default function TransferDialog() {
                   suffix: 6,
                 })}
           </div>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={handleCopyAddress}>
             <CopyIcon className="h-3 w-3" />
           </Button>
         </div>
