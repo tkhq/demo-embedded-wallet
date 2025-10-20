@@ -13,6 +13,7 @@ import {
   CopyIcon,
 } from "lucide-react"
 import QRCode from "react-qr-code"
+import { toast } from "sonner"
 import { useIsClient, useMediaQuery } from "usehooks-ts"
 import {
   formatEther,
@@ -164,7 +165,14 @@ export default function TransferDialog() {
         value: transactionRequest.value,
       })
 
-      const walletAccount = wallets[0]?.accounts[0]
+      // Find the wallet account that matches the currently selected account
+      const walletAccount = wallets
+        .flatMap((wallet) => wallet.accounts)
+        .find((account) => account.address === selectedAccount?.address)
+
+      if (!walletAccount) {
+        throw new Error("Selected account not found in wallets")
+      }
 
       const signedTransaction = await signTransaction({
         unsignedTransaction,
@@ -220,6 +228,13 @@ export default function TransferDialog() {
     setAmountUSD("0")
     setTransactionRequest(null)
     setRecipientAddress(DEFAULT_RECIPIENT_ADDRESS)
+  }
+
+  const handleCopyAddress = () => {
+    if (selectedAccount?.address) {
+      navigator.clipboard.writeText(selectedAccount.address)
+      toast.success("Address copied to clipboard")
+    }
   }
 
   useEffect(() => {
@@ -340,7 +355,7 @@ export default function TransferDialog() {
                   suffix: 6,
                 })}
           </div>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={handleCopyAddress}>
             <CopyIcon className="h-3 w-3" />
           </Button>
         </div>
