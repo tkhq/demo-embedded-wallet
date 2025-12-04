@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
   const { turnkey, indexedDbClient, passkeyClient, walletClient } = useTurnkey()
-  const warningTimeoutRef = useRef<NodeJS.Timeout>()
+  const warningTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const initEmailLogin = async (email: Email) => {
     dispatch({ type: "LOADING", payload: true })
