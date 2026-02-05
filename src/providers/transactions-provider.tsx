@@ -43,7 +43,7 @@ const TransactionsContext = createContext<TransactionsContextType | undefined>(
 
 const initialState: TransactionsState = {
   transactions: {},
-  loading: true,
+  loading: false,
   error: null,
 }
 
@@ -107,7 +107,16 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       if (selectedAccount?.address) {
         dispatch({ type: "SET_FETCHING_TRANSACTIONS" })
         try {
-          const transactions = await getTransactions(selectedAccount.address)
+          // Add timeout to prevent indefinite loading
+          const transactionsPromise = getTransactions(selectedAccount.address)
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Transaction fetch timeout")), 30000)
+          )
+
+          const transactions = await Promise.race([
+            transactionsPromise,
+            timeoutPromise,
+          ])
 
           dispatch({
             type: "SET_TRANSACTIONS",
@@ -137,6 +146,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           )
         } catch (error) {
+          console.error("Error fetching transactions:", error)
           dispatch({
             type: "SET_ERROR",
             payload: "Failed to fetch transactions",
