@@ -22,18 +22,18 @@ export function PasskeyItem({
   isRemovable,
 }: PasskeyItemProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
+    <div className="border-border bg-card flex items-center justify-between rounded-lg border p-4">
       <div className="flex items-center space-x-4">
         <div className="shrink-0">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 sm:h-10 sm:w-10">
-            <Key className="h-3 w-3 text-primary sm:h-5 sm:w-5" />
+          <div className="bg-primary/10 flex h-6 w-6 items-center justify-center rounded-full sm:h-10 sm:w-10">
+            <Key className="text-primary h-3 w-3 sm:h-5 sm:w-5" />
           </div>
         </div>
         <div>
-          <h3 className=" text-xs font-medium text-card-foreground sm:text-sm">
+          <h3 className="text-card-foreground text-xs font-medium sm:text-sm">
             {name}
           </h3>
-          <span className="text-xs text-muted-foreground sm:hidden">
+          <span className="text-muted-foreground text-xs sm:hidden">
             Created at{" "}
             {createdAt.toLocaleDateString("en-US", {
               month: "short",
@@ -44,7 +44,7 @@ export function PasskeyItem({
         </div>
       </div>
       <div className="flex items-center sm:space-x-4">
-        <span className="hidden text-xs text-muted-foreground sm:block">
+        <span className="text-muted-foreground hidden text-xs sm:block">
           Created at{" "}
           {createdAt.toLocaleDateString("en-US", {
             month: "short",
@@ -60,7 +60,7 @@ export function PasskeyItem({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              className="cursor-pointer text-destructive focus:text-destructive"
+              className="text-destructive focus:text-destructive cursor-pointer"
               onClick={onRemove}
               disabled={!isRemovable}
             >

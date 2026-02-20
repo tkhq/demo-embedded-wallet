@@ -16,7 +16,7 @@ export default function SideNav() {
             href="https://turnkey.com"
             className="flex items-center gap-2 font-semibold"
           >
-            <Icons.turnkey className="h-7 w-auto  fill-white stroke-none" />
+            <Icons.turnkey className="h-7 w-auto fill-white stroke-none" />
             <span className="sr-only">Primev</span>
           </Link>
         </div>
@@ -24,14 +24,14 @@ export default function SideNav() {
           <nav className="grid items-start gap-2 px-2 text-sm font-medium lg:px-6">
             <ActiveLink
               href="/dashboard"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              className="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
             >
               <Home className="h-4 w-4" />
               Dashboard
             </ActiveLink>
             <ActiveLink
               href="/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              className="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
             >
               <Lock className="h-4 w-4" />
               Settings

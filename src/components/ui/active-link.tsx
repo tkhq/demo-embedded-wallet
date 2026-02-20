@@ -21,7 +21,7 @@ const ActiveLink = React.forwardRef<HTMLAnchorElement, ActiveLinkProps>(
         href={href}
         className={cn(
           className,
-          "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+          "text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
           isActive ? "text-primev" : ""
         )}
         ref={ref}

@@ -50,7 +50,7 @@ export default function Activity() {
       <CardContent>
         <ScrollArea className="flex max-h-[450px] w-full flex-col overflow-y-auto rounded-md">
           <Table>
-            <TableHeader className="sticky top-0 bg-card">
+            <TableHeader className="bg-card sticky top-0">
               <TableRow>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Date</TableHead>
@@ -134,11 +134,11 @@ export default function Activity() {
                     <TableCell>
                       <div className="font-medium">
                         {transaction.value ? formatEther(transaction.value) : 0}{" "}
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           ETH
                         </span>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         $
                         {transaction.value
                           ? (
@@ -153,7 +153,7 @@ export default function Activity() {
               ) : (
                 <TableRow>
                   <TableCell
-                    className="text-center text-muted-foreground"
+                    className="text-muted-foreground text-center"
                     colSpan={5}
                   >
                     No activity. Send or receive ETH to see transactions here.
