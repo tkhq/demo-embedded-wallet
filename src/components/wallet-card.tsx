@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useWallets } from "@/providers/wallet-provider"
-import { ExportType, useTurnkey } from "@turnkey/react-wallet-kit"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { CopyIcon, Download, HandCoins, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { formatEther } from "viem"
@@ -25,7 +25,7 @@ import { Skeleton } from "./ui/skeleton"
 export default function WalletCard() {
   const { ethPrice } = useTokenPrice()
   const { state } = useWallets()
-  const { handleImport, handleExport } = useTurnkey()
+  const { handleImportWallet, handleExportWallet } = useTurnkey()
   const { selectedWallet, selectedAccount } = state
   const [usdAmount, setUsdAmount] = useState<number | undefined>(undefined)
 
@@ -64,7 +64,7 @@ export default function WalletCard() {
           </Button>
           <TransferDialog />
 
-          <Button variant="outline" onClick={() => handleImport()}>
+          <Button variant="outline" onClick={() => handleImportWallet()}>
             <Download className="mr-2 h-4 w-4" />
             Import
           </Button>
@@ -72,9 +72,8 @@ export default function WalletCard() {
           <Button
             variant="outline"
             onClick={() =>
-              handleExport({
+              handleExportWallet({
                 walletId: selectedWallet?.walletId ?? "",
-                exportType: ExportType.Wallet,
               })
             }
           >
@@ -120,7 +119,7 @@ export default function WalletCard() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => handleImport()}
+              onClick={() => handleImportWallet()}
             >
               <Download className="mr-2 h-4 w-4" />
               Import
@@ -130,9 +129,8 @@ export default function WalletCard() {
               variant="outline"
               className="w-full"
               onClick={() =>
-                handleExport({
+                handleExportWallet({
                   walletId: selectedWallet?.walletId ?? "",
-                  exportType: ExportType.Wallet,
                 })
               }
             >

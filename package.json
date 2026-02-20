@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:local": "SKIP_ENV_VALIDATION=1 next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "format": "pnpm prettier ./src --write",
     "format:check": "pnpm prettier ./src --check"
   },
@@ -65,7 +66,7 @@
     "@types/node": "^20.12.7",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "eslint": "^8.57.0",
+    "eslint": "^9",
     "eslint-config-next": "^15.5.10",
     "postcss": "^8.4.38",
     "prettier": "^3.2.5",
@@ -82,15 +83,12 @@
       "axios": ">=1.13.5",
       "form-data": ">=4.0.4",
       "ws": ">=7.5.10",
-      "base-x": ">=4.0.1",
-      "glob": ">=10.5.0",
+      "base-x": "^4.0.0",
       "jws": ">=3.2.3",
       "h3": ">=1.15.5",
       "tar": ">=7.5.8",
-      "minimatch": ">=10.2.1",
       "@babel/runtime": ">=7.26.10",
       "js-yaml": ">=4.1.1",
-      "ajv": ">=8.18.0",
       "brace-expansion": ">=2.0.2"
     }
   }
