@@ -287,11 +287,23 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   }
 
   const selectAccount = async (account: Account) => {
-    const balance = await getCachedBalance(account.address)
+    // Set account immediately to avoid UI blocking
     dispatch({
       type: "SET_SELECTED_ACCOUNT",
-      payload: { ...account, balance },
+      payload: { ...account, balance: 0n },
     })
+
+    // Fetch balance in background and update when ready
+    try {
+      const balance = await getCachedBalance(account.address)
+      dispatch({
+        type: "SET_SELECTED_ACCOUNT",
+        payload: { ...account, balance },
+      })
+    } catch (error) {
+      console.error("Error fetching balance:", error)
+      // Keep the account selected with 0 balance on error
+    }
   }
 
   const value = {
