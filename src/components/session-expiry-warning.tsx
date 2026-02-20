@@ -8,8 +8,8 @@ const WARNING_BUFFER = 15 // seconds
 
 export function SessionExpiryWarning() {
   const { state } = useAuth()
-  const intervalRef = useRef<NodeJS.Timeout>()
-  const toastIdRef = useRef<string | number>()
+  const intervalRef = useRef<NodeJS.Timeout>(undefined)
+  const toastIdRef = useRef<string | number>(undefined)
   const countdownRef = useRef(WARNING_BUFFER)
 
   useEffect(() => {

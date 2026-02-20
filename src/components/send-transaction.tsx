@@ -51,21 +51,21 @@ export default function SendTransaction({
       </div>
       <div className="space-y-4">
         <div className="flex justify-between">
-          <span className="font-medium text-muted-foreground">Send to</span>
+          <span className="text-muted-foreground font-medium">Send to</span>
           <span className="text-right">
             {transaction.to ? truncateAddress(transaction.to) : "0x"}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="font-medium text-muted-foreground">Network</span>
+          <span className="text-muted-foreground font-medium">Network</span>
           <span>{network}</span>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <span className="font-medium text-muted-foreground">Total</span>
-          <span className="text-sm text-muted-foreground/70">
+          <span className="text-muted-foreground font-medium">Total</span>
+          <span className="text-muted-foreground/70 text-sm">
             incl. ~${totalGasFeesUSD.toFixed(2)} network fee
           </span>
         </div>
@@ -75,7 +75,7 @@ export default function SendTransaction({
         </div>
       </div>
 
-      <Button className="w-full  py-3" onClick={handleSend}>
+      <Button className="w-full py-3" onClick={handleSend}>
         Send
       </Button>
     </div>

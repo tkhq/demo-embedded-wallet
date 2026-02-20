@@ -76,11 +76,11 @@ export default function Assets() {
               <TableCell className="p-2 sm:hidden">
                 <div className="font-medium">
                   {amount}
-                  <span className="ml-1 text-xs text-muted-foreground">
+                  <span className="text-muted-foreground ml-1 text-xs">
                     ETH
                   </span>
                 </div>
-                <div className=" text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   ${valueInUSD}
                 </div>
               </TableCell>

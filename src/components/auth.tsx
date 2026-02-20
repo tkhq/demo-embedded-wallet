@@ -48,13 +48,11 @@ function AuthContent() {
     loginWithPasskey,
     user,
     loginOrSignupWithWallet,
-    getWalletProviders,
+    walletProviders,
   } = useTurnkey()
   const { state } = useAuth()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [walletDialogOpen, setWalletDialogOpen] = useState(false)
-  const [isLoadingProviders, setIsLoadingProviders] = useState(false)
-  const [walletProviders, setWalletProviders] = useState<any[]>([])
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -124,18 +122,13 @@ function AuthContent() {
     }
   }
 
-  const openWalletDialog = async () => {
+  const openWalletDialog = () => {
     setWalletDialogOpen(true)
-    setIsLoadingProviders(true)
-    try {
-      const providers = await getWalletProviders()
-      setWalletProviders(
-        providers.filter((p) => p.interfaceType !== "solana") ?? []
-      )
-    } finally {
-      setIsLoadingProviders(false)
-    }
   }
+
+  const filteredWalletProviders = walletProviders.filter(
+    (p) => p.interfaceType !== "solana"
+  )
 
   const handleWalletLogin = async (provider: any) => {
     setLoadingAction("wallet")
@@ -248,17 +241,13 @@ function AuthContent() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            {isLoadingProviders ? (
-              <div className="text-muted-foreground text-sm">
-                Loading providers…
-              </div>
-            ) : walletProviders.length === 0 ? (
+            {filteredWalletProviders.length === 0 ? (
               <div className="text-muted-foreground text-sm">
                 No compatible wallet providers found.
               </div>
             ) : (
               <div className="grid gap-2">
-                {walletProviders.map((p, idx) => (
+                {filteredWalletProviders.map((p, idx) => (
                   <Button
                     key={`${p?.info?.name ?? "provider"}-${idx}`}
                     type="button"

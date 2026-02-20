@@ -242,6 +242,7 @@ export const initEmailAuth = async ({
 
   if (organizationId?.length) {
     const authResponse = await client.initOtp({
+      appName: "Demo Embedded Wallet",
       userIdentifier: targetPublicKey,
       otpType: OtpType.Email,
       contact: email,

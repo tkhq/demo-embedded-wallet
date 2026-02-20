@@ -7,7 +7,7 @@ import Feature from "../components/feature"
 
 export default function Features() {
   return (
-    <div className=" flex h-full w-full flex-col justify-center gap-16 px-24 text-white">
+    <div className="flex h-full w-full flex-col justify-center gap-16 px-24 text-white">
       <Feature title="Non-custodial" icon={<CheckCircle />}>
         Only you can access your private keys.
       </Feature>
@@ -21,7 +21,7 @@ export default function Features() {
           include email, passkeys,{" "}
           <Link
             target="_blank"
-            className=" text-white underline underline-offset-4"
+            className="text-white underline underline-offset-4"
             href="https://docs.turnkey.com/passkeys/introduction"
           >
             and more
@@ -33,7 +33,7 @@ export default function Features() {
         Scalable, institutional-grade security. View our security documentation{" "}
         <Link
           target="_blank"
-          className=" text-white underline underline-offset-4"
+          className="text-white underline underline-offset-4"
           href="https://docs.turnkey.com/category/security"
         >
           here
@@ -45,7 +45,7 @@ export default function Features() {
         Curious about how this is built? Dive into the code on{" "}
         <Link
           target="_blank"
-          className=" text-white underline underline-offset-4"
+          className="text-white underline underline-offset-4"
           href="https://github.com/tkhq/demo-embedded-wallet"
         >
           Github

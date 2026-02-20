@@ -3,6 +3,7 @@ import { createEnv } from "@t3-oss/env-nextjs"
 import { z } from "zod"
 
 export const env = createEnv({
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   client: {
     NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
     NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID: z.string().min(1),

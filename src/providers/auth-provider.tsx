@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
   const router = useRouter()
   const { turnkey, indexedDbClient, passkeyClient, walletClient } = useTurnkey()
-  const warningTimeoutRef = useRef<NodeJS.Timeout>()
+  const warningTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const initEmailLogin = async (email: Email) => {
     dispatch({ type: "LOADING", payload: true })
@@ -317,11 +317,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       // Catch the user cancel error and force a hard reload to avoid a stalled key
-      const message: string = error?.message || "";
+      const message: string = error?.message || ""
       if (message.includes("NotAllowedError")) {
-      window.location.reload();
-      return;
-    }
+        window.location.reload()
+        return
+      }
       dispatch({ type: "ERROR", payload: error.message })
     } finally {
       dispatch({ type: "LOADING", payload: false })

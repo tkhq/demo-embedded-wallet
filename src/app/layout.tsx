@@ -1,5 +1,5 @@
 import "@/styles/globals.css"
-import "@turnkey/react-wallet-kit/dist/styles.css"
+import "@turnkey/react-wallet-kit/styles.css"
 
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
