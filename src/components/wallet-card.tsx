@@ -91,6 +91,10 @@ export default function WalletCard() {
               {truncateAddress(selectedAccount?.address)}
               <CopyIcon className="h-3 w-3" />
             </div>
+          ) : selectedWallet?.walletName ? (
+            <span className="text-muted-foreground">
+              No accounts. Please create one via nav bar panel.
+            </span>
           ) : (
             <Skeleton className="bg-muted-foreground/50 h-3 w-32 rounded-sm" />
           )}
