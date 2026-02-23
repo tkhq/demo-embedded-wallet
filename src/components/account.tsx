@@ -101,7 +101,7 @@ export default function Account() {
         >
           <div className="flex items-center gap-3">
             <AccountAvatar address={selectedAccount?.address} />
-            {selectedWallet?.walletName && selectedAccount?.address ? (
+            {selectedWallet?.walletName ? (
               <div className="text-left">
                 <div className="text-sm font-semibold">
                   {selectedWallet?.walletName}
@@ -109,7 +109,7 @@ export default function Account() {
                 <div className="text-muted-foreground text-xs font-semibold">
                   {selectedAccount?.address
                     ? truncateAddress(selectedAccount?.address)
-                    : ""}
+                    : "No accounts. Please create one via nav bar panel."}
                 </div>
               </div>
             ) : (
