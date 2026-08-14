@@ -2,9 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useAuth } from "@/providers/auth-provider"
+import { useTurnkeyConfig } from "@/providers/config/config-provider"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useTurnkey } from "@turnkey/react-wallet-kit"
+import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit"
+import { Settings2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
@@ -45,12 +46,12 @@ const formSchema = z.object({
 function AuthContent() {
   const {
     httpClient,
+    initOtp,
     loginWithPasskey,
-    user,
     loginOrSignupWithWallet,
     walletProviders,
   } = useTurnkey()
-  const { state } = useAuth()
+  const { config, devMode, setDevMode } = useTurnkeyConfig()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [walletDialogOpen, setWalletDialogOpen] = useState(false)
 
@@ -85,14 +86,17 @@ function AuthContent() {
     } else {
       // If the user's account does not exist, we assume they have not created a passkey
       // and we need to verify their email via OTP and then sign them up
-      const init = await httpClient?.proxyInitOtp({
-        otpType: "OTP_TYPE_EMAIL",
+      const { otpId, otpEncryptionTargetBundle } = await initOtp({
+        otpType: OtpType.Email,
         contact: email,
       })
 
-      if (init?.otpId) {
+      if (otpId) {
+        // The encryption target bundle is required by verifyOtp/completeOtp on the
+        // verification page; stash it keyed by otpId for the next step.
+        sessionStorage.setItem(`otp-bundle:${otpId}`, otpEncryptionTargetBundle)
         router.push(
-          `/verify-email?id=${encodeURIComponent(init.otpId)}&email=${encodeURIComponent(
+          `/verify-email?id=${encodeURIComponent(otpId)}&email=${encodeURIComponent(
             email
           )}&type=passkey`
         )
@@ -105,16 +109,26 @@ function AuthContent() {
   const handleEmailLogin = async (email: Email) => {
     setLoadingAction("email")
     try {
-      const init = await httpClient?.proxyInitOtp({
-        otpType: "OTP_TYPE_EMAIL",
+      // Email OTP is login-or-signup. Check existence up front (same as the
+      // passkey path) so the verify step knows whether it's a NEW sub-org and
+      // should trigger provisioning (policies + Policy Manager + 2/2).
+      const account = await httpClient?.proxyGetAccount({
+        filterType: "EMAIL",
+        filterValue: email,
+      })
+      const isNew = !account?.organizationId
+
+      const { otpId, otpEncryptionTargetBundle } = await initOtp({
+        otpType: OtpType.Email,
         contact: email,
       })
 
-      if (init?.otpId) {
+      if (otpId) {
+        sessionStorage.setItem(`otp-bundle:${otpId}`, otpEncryptionTargetBundle)
         router.push(
-          `/verify-email?id=${encodeURIComponent(init.otpId)}&email=${encodeURIComponent(
+          `/verify-email?id=${encodeURIComponent(otpId)}&email=${encodeURIComponent(
             email
-          )}&type=email`
+          )}&type=email&new=${isNew ? "1" : "0"}`
         )
       }
     } finally {
@@ -145,12 +159,27 @@ function AuthContent() {
     }
   }
 
-  // Redirect to dashboard when user session is established
-  useEffect(() => {
-    if (user) {
-      router.push("/dashboard")
-    }
-  }, [user, router])
+  // Which auth methods to surface on this custom login card. Mirrors the RWK
+  // auth modal: when a method is unset in the config it defaults to enabled, so
+  // with Dev Mode off every button shows (unchanged behavior). The Dev Mode
+  // panel writes explicit overrides into ui.authModal.methods, which then hide
+  // or show the matching buttons here.
+  const methods = config.ui?.authModal?.methods ?? {}
+  const isEnabled = (key: keyof NonNullable<typeof methods>) =>
+    methods[key] ?? true
+
+  const passkeyEnabled = isEnabled("passkeyAuthEnabled")
+  const emailEnabled = isEnabled("emailOtpAuthEnabled")
+  const walletEnabled = isEnabled("walletAuthEnabled")
+  const googleEnabled = isEnabled("googleOauthEnabled")
+  const appleEnabled = isEnabled("appleOauthEnabled")
+  const facebookEnabled = isEnabled("facebookOauthEnabled")
+
+  const showEmailInput = passkeyEnabled || emailEnabled
+  const showWalletSeparator = showEmailInput && walletEnabled
+  const showOauthSeparator =
+    (passkeyEnabled || emailEnabled || walletEnabled) &&
+    (googleEnabled || appleEnabled || facebookEnabled)
 
   return (
     <>
@@ -172,66 +201,88 @@ function AuthContent() {
         <CardContent className="space-y-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(() => {})} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <LoadingButton
-                type="submit"
-                className="w-full font-semibold"
-                disabled={!form.formState.isValid}
-                loading={state.loading && loadingAction === "passkey"}
-                onClick={() =>
-                  handlePasskeyLogin(form.getValues().email as Email)
-                }
-              >
-                Continue with passkey
-              </LoadingButton>
+              {showEmailInput && (
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="Enter your email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {passkeyEnabled && (
+                <LoadingButton
+                  type="submit"
+                  className="w-full font-semibold"
+                  disabled={!form.formState.isValid}
+                  loading={loadingAction === "passkey"}
+                  onClick={() =>
+                    handlePasskeyLogin(form.getValues().email as Email)
+                  }
+                >
+                  Continue with passkey
+                </LoadingButton>
+              )}
 
-              <LoadingButton
-                type="button"
-                variant="outline"
-                className="w-full font-semibold"
-                disabled={!form.formState.isValid}
-                onClick={() =>
-                  handleEmailLogin(form.getValues().email as Email)
-                }
-                loading={state.loading && loadingAction === "email"}
-              >
-                Continue with email
-              </LoadingButton>
-              <OrSeparator />
-              <LoadingButton
-                type="button"
-                variant="outline"
-                className="w-full font-semibold"
-                onClick={openWalletDialog}
-                loading={state.loading && loadingAction === "wallet"}
-              >
-                Continue with wallet
-              </LoadingButton>
+              {emailEnabled && (
+                <LoadingButton
+                  type="button"
+                  variant="outline"
+                  className="w-full font-semibold"
+                  disabled={!form.formState.isValid}
+                  onClick={() =>
+                    handleEmailLogin(form.getValues().email as Email)
+                  }
+                  loading={loadingAction === "email"}
+                >
+                  Continue with email
+                </LoadingButton>
+              )}
+              {showWalletSeparator && <OrSeparator />}
+              {walletEnabled && (
+                <LoadingButton
+                  type="button"
+                  variant="outline"
+                  className="w-full font-semibold"
+                  onClick={openWalletDialog}
+                  loading={loadingAction === "wallet"}
+                >
+                  Continue with wallet
+                </LoadingButton>
+              )}
             </form>
           </Form>
-          <OrSeparator />
-          <GoogleAuth />
-          <AppleAuth />
-          <FacebookAuth />
+          {showOauthSeparator && <OrSeparator />}
+          {googleEnabled && <GoogleAuth />}
+          {appleEnabled && <AppleAuth />}
+          {facebookEnabled && <FacebookAuth />}
         </CardContent>
       </Card>
       <Legal />
+      <div className="mt-4 flex items-center justify-center gap-2">
+        <span className="text-muted-foreground text-xs">Config Panel</span>
+        <Button
+          type="button"
+          size="sm"
+          variant={devMode ? "default" : "outline"}
+          className="h-7 gap-1.5 px-2.5 text-xs"
+          onClick={() => setDevMode(!devMode)}
+          aria-pressed={devMode}
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          {devMode ? "On" : "Off"}
+        </Button>
+      </div>
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>

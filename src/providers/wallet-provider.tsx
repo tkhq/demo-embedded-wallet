@@ -3,25 +3,40 @@
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useReducer,
   useRef,
 } from "react"
+import {
+  accountForChain,
+  byWalletCreation,
+  caip2For,
+  CHAIN_LIST,
+  ChainKey,
+  NetworkMode,
+  walletAccountIndexes,
+} from "@/config/networks"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { useLocalStorage } from "usehooks-ts"
 import { getAddress, isAddress } from "viem"
 
-import { Account, PreferredWallet, Wallet } from "@/types/turnkey"
-import { PREFERRED_WALLET_KEY } from "@/lib/constants"
-import { getBalance } from "@/lib/web3"
+import { Account, AssetBalance, Wallet } from "@/types/turnkey"
+import { NETWORK_MODE_KEY } from "@/lib/constants"
 
 interface WalletsState {
   loading: boolean
   error: string
   wallets: Wallet[]
   selectedWallet: Wallet | null
-  selectedAccount: Account | null
+  // The selected HD account index (Phantom-style "Account N"). Each index is one
+  // ETH+SOL pair; balances/assets/send target this index's addresses.
+  selectedAccountIndex: number
+  // Asset balances keyed by ChainKey for the active network mode + selected
+  // account. One EVM account is queried per EVM chain (ethereum, base, …), so
+  // balances are keyed by chain rather than by address.
+  balancesByChain: Record<string, AssetBalance[]>
 }
 
 type Action =
@@ -29,7 +44,8 @@ type Action =
   | { type: "SET_ERROR"; payload: string }
   | { type: "SET_WALLETS"; payload: Wallet[] }
   | { type: "SET_SELECTED_WALLET"; payload: Wallet }
-  | { type: "SET_SELECTED_ACCOUNT"; payload: Account | null }
+  | { type: "SET_SELECTED_ACCOUNT_INDEX"; payload: number }
+  | { type: "SET_BALANCES"; payload: Record<string, AssetBalance[]> }
   | { type: "ADD_WALLET"; payload: Wallet }
   | { type: "ADD_ACCOUNT"; payload: Account }
 
@@ -37,10 +53,19 @@ const WalletsContext = createContext<
   | {
       state: WalletsState
       dispatch: React.Dispatch<Action>
+      networkMode: NetworkMode
+      setNetworkMode: (mode: NetworkMode) => void
+      getBalances: (chainKey: ChainKey) => AssetBalance[]
+      refreshBalances: () => Promise<void>
       newWallet: (walletName?: string) => Promise<void>
       newWalletAccount: () => Promise<void>
       selectWallet: (wallet: Wallet) => void
-      selectAccount: (account: Account) => void
+      // The account indexes present in the selected wallet (each = an ETH+SOL pair).
+      accountIndexes: number[]
+      selectedAccountIndex: number
+      setSelectedAccountIndex: (index: number) => void
+      // The EVM account at the selected index (for the avatar seed).
+      selectedAccount: Account | undefined
     }
   | undefined
 >(undefined)
@@ -55,8 +80,10 @@ function walletsReducer(state: WalletsState, action: Action): WalletsState {
       return { ...state, wallets: action.payload }
     case "SET_SELECTED_WALLET":
       return { ...state, selectedWallet: action.payload }
-    case "SET_SELECTED_ACCOUNT":
-      return { ...state, selectedAccount: action.payload }
+    case "SET_SELECTED_ACCOUNT_INDEX":
+      return { ...state, selectedAccountIndex: action.payload }
+    case "SET_BALANCES":
+      return { ...state, balancesByChain: action.payload }
     case "ADD_WALLET":
       return { ...state, wallets: [...state.wallets, action.payload] }
     case "ADD_ACCOUNT":
@@ -101,12 +128,10 @@ const initialState: WalletsState = {
   error: "",
   wallets: [],
   selectedWallet: null,
-  selectedAccount: null,
+  selectedAccountIndex: 0,
+  balancesByChain: {},
 }
 
-// @todo - add an updateWallets function that will be called when the user
-// updates their wallet settings, such as adding a new account or updating
-// the wallet name
 export function WalletsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(walletsReducer, initialState)
   const {
@@ -116,32 +141,125 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     refreshWallets,
     user,
     session,
+    httpClient,
   } = useTurnkey()
 
-  const [preferredWallet, setPreferredWallet] =
-    useLocalStorage<PreferredWallet>(PREFERRED_WALLET_KEY, {
-      userId: "",
-      walletId: "",
-    })
-  const balanceCacheRef = useRef<Map<string, Promise<bigint> | bigint>>(
-    new Map()
+  const [networkMode, setNetworkMode] = useLocalStorage<NetworkMode>(
+    NETWORK_MODE_KEY,
+    "testnet"
   )
   const pendingSelectWalletIdRef = useRef<string | null>(null)
-  const pendingSelectAccountAddressRef = useRef<string | null>(null)
+  // Set after "Add Account" so the newest index is selected once it appears.
+  const pendingSelectNewestRef = useRef(false)
+  // Wallet ids for which a Solana-account backfill has already been attempted,
+  // so we don't retry on every render.
+  const backfilledWalletIdsRef = useRef<Set<string>>(new Set())
+  // Monotonic id so a slower in-flight balance fetch can't overwrite a newer one.
+  const balanceRequestIdRef = useRef(0)
+
+  const selectWallet = (wallet: Wallet) => {
+    dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
+    // Reset to the first account (index 0) when switching wallets.
+    dispatch({ type: "SET_SELECTED_ACCOUNT_INDEX", payload: 0 })
+  }
+
+  const setSelectedAccountIndex = (index: number) => {
+    dispatch({ type: "SET_SELECTED_ACCOUNT_INDEX", payload: index })
+  }
+
+  const getBalances = useCallback(
+    (chainKey: ChainKey): AssetBalance[] =>
+      state.balancesByChain[chainKey] ?? [],
+    [state.balancesByChain]
+  )
+
+  // Fetch balances for every chain in the active network mode, via Turnkey's
+  // Balances API (no RPC). Each chain is queried against the wallet account that
+  // serves it — so one EVM account is queried once per EVM chain (ethereum, base).
+  const fetchBalances = useCallback(
+    async (wallet: Wallet | null, mode: NetworkMode, index: number) => {
+      // Skip when there's no active session (e.g. during/after logout) — the
+      // Balances API would reject with "No active session or token available".
+      if (!wallet || !httpClient || !session?.organizationId) return
+
+      const organizationId = session.organizationId
+      const requestId = ++balanceRequestIdRef.current
+      const entries = await Promise.all(
+        CHAIN_LIST.map(async (chain) => {
+          const account = accountForChain(wallet, chain.key, index)
+          if (!account) return [chain.key, [] as AssetBalance[]] as const
+          try {
+            const { balances = [] } = await httpClient.getWalletAddressBalances({
+              organizationId,
+              address: account.address,
+              caip2: caip2For(chain.key, mode),
+            })
+            return [chain.key, balances as AssetBalance[]] as const
+          } catch (error) {
+            console.error(
+              `Error fetching ${chain.key} balances for ${account.address}:`,
+              error
+            )
+            return [chain.key, [] as AssetBalance[]] as const
+          }
+        })
+      )
+
+      // Ignore stale responses (a newer fetch has started meanwhile).
+      if (requestId !== balanceRequestIdRef.current) return
+
+      dispatch({
+        type: "SET_BALANCES",
+        payload: Object.fromEntries(entries),
+      })
+    },
+    [httpClient, session]
+  )
+
+  const refreshBalances = useCallback(
+    () =>
+      fetchBalances(
+        state.selectedWallet,
+        networkMode,
+        state.selectedAccountIndex
+      ),
+    [fetchBalances, state.selectedWallet, networkMode, state.selectedAccountIndex]
+  )
+
+  // Re-fetch balances whenever the selected wallet, network mode, or selected
+  // account index changes.
+  useEffect(() => {
+    fetchBalances(state.selectedWallet, networkMode, state.selectedAccountIndex)
+  }, [
+    state.selectedWallet,
+    networkMode,
+    state.selectedAccountIndex,
+    fetchBalances,
+  ])
 
   useEffect(() => {
     if (!session?.organizationId) {
       return
     }
 
+    // Normalize accounts, keeping BOTH EVM (checksummed) and Solana (base58)
+    // addresses. The old code filtered on viem `isAddress`, which silently
+    // dropped Solana accounts.
     const normalizedWallets: Wallet[] = (hookWallets ?? []).map((wallet) => ({
       ...wallet,
       accounts: (wallet.accounts ?? [])
-        .filter((account: any) => isAddress(account.address))
-        .map((account: any) => ({
-          ...account,
-          address: getAddress(account.address),
-        })),
+        .map((account: any) => {
+          if (account.addressFormat === "ADDRESS_FORMAT_ETHEREUM") {
+            return isAddress(account.address)
+              ? { ...account, address: getAddress(account.address) }
+              : null
+          }
+          if (account.addressFormat === "ADDRESS_FORMAT_SOLANA") {
+            return { ...account }
+          }
+          return null
+        })
+        .filter((account): account is Account => account !== null),
     }))
 
     dispatch({ type: "SET_WALLETS", payload: normalizedWallets })
@@ -158,10 +276,20 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       )
       if (updatedSelected) {
         dispatch({ type: "SET_SELECTED_WALLET", payload: updatedSelected })
+        // After "Add Account", select the newest (highest) index once it lands.
+        if (pendingSelectNewestRef.current) {
+          const idxs = walletAccountIndexes(updatedSelected)
+          dispatch({
+            type: "SET_SELECTED_ACCOUNT_INDEX",
+            payload: idxs[idxs.length - 1] ?? 0,
+          })
+          pendingSelectNewestRef.current = false
+        }
       }
     }
 
-    // If a wallet has been requested for selection by id (optimistic path), try to select it
+    // If a wallet has been requested for selection by id (a just-created
+    // wallet), select it once it appears in the refreshed list.
     if (pendingSelectWalletIdRef.current) {
       const match = normalizedWallets.find(
         (w) => w.walletId === pendingSelectWalletIdRef.current
@@ -173,80 +301,55 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // If a newly created account address is pending selection, select it once it exists in the current selected wallet
-    if (pendingSelectAccountAddressRef.current && state.selectedWallet) {
-      const currentWallet = normalizedWallets.find(
-        (w) => w.walletId === state.selectedWallet?.walletId
-      )
-      const account = currentWallet?.accounts?.find(
-        (a: any) =>
-          getAddress(a.address) === pendingSelectAccountAddressRef.current
-      )
-      if (account) {
-        // Select the newly created account and clear the pending ref
-        selectAccount(account as Account)
-        pendingSelectAccountAddressRef.current = null
-      }
-    }
-
-    // Only auto-select when nothing is selected to avoid overriding user choice
+    // Nothing selected yet: open on the oldest (Default) wallet.
     if (!state.selectedWallet) {
-      let selected: Wallet = normalizedWallets[0]
-      if (preferredWallet.userId === user?.userId && preferredWallet.walletId) {
-        const preferred = normalizedWallets.find(
-          (w) => w.walletId === preferredWallet.walletId
-        )
-        if (preferred) selected = preferred
-      }
-      selectWallet(selected)
+      selectWallet([...normalizedWallets].sort(byWalletCreation)[0])
     }
   }, [hookWallets, user])
 
+  // Backfill a Solana account for wallets created before multi-chain support.
   useEffect(() => {
-    if (
-      state.selectedWallet &&
-      state.selectedWallet.accounts?.length &&
-      !state.selectedAccount &&
-      !pendingSelectAccountAddressRef.current
-    ) {
-      selectAccount(state.selectedWallet.accounts[0])
-    }
-  }, [state.selectedWallet, state.selectedAccount])
+    const wallet = state.selectedWallet
+    if (!wallet || !createWalletAccounts) return
+    if (backfilledWalletIdsRef.current.has(wallet.walletId)) return
 
-  async function getCachedBalance(address: string): Promise<bigint> {
-    const key = getAddress(address)
-    const cached = balanceCacheRef.current.get(key)
-    if (cached instanceof Promise) return cached
-    if (typeof cached === "bigint") return cached
+    const hasEvm = wallet.accounts.some(
+      (a) => a.addressFormat === "ADDRESS_FORMAT_ETHEREUM"
+    )
+    const hasSolana = wallet.accounts.some(
+      (a) => a.addressFormat === "ADDRESS_FORMAT_SOLANA"
+    )
+    if (!hasEvm || hasSolana) return
 
-    const promise = getBalance(key)
-      .then((balance) => {
-        balanceCacheRef.current.set(key, balance)
-        return balance
-      })
-      .catch((error) => {
-        balanceCacheRef.current.delete(key)
-        throw error
-      })
+    backfilledWalletIdsRef.current.add(wallet.walletId)
+    ;(async () => {
+      try {
+        await createWalletAccounts({
+          walletId: wallet.walletId,
+          accounts: ["ADDRESS_FORMAT_SOLANA"],
+        })
+        await refreshWallets()
+      } catch (error) {
+        console.error("Failed to backfill Solana account:", error)
+        // Allow a retry on a later render if it failed.
+        backfilledWalletIdsRef.current.delete(wallet.walletId)
+      }
+    })()
+  }, [state.selectedWallet, createWalletAccounts, refreshWallets])
 
-    balanceCacheRef.current.set(key, promise)
-    return promise
-  }
-
+  // Add Account: mints the next HD index (a new ETH + SOL pair — the SDK
+  // auto-advances the index to avoid duplicates). The newest index is selected
+  // once the wallet refresh lands (see pendingSelectNewestRef above).
   const newWalletAccount = async () => {
+    if (!state.selectedWallet) return
     dispatch({ type: "SET_LOADING", payload: true })
     try {
-      if (state.selectedWallet) {
-        const created = await createWalletAccounts({
-          walletId: state.selectedWallet.walletId,
-          accounts: ["ADDRESS_FORMAT_ETHEREUM"],
-        })
-        const createdAddress = Array.isArray(created) ? created[0] : created
-        if (createdAddress) {
-          pendingSelectAccountAddressRef.current = getAddress(createdAddress)
-        }
-        await refreshWallets()
-      }
+      await createWalletAccounts({
+        walletId: state.selectedWallet.walletId,
+        accounts: ["ADDRESS_FORMAT_ETHEREUM", "ADDRESS_FORMAT_SOLANA"],
+      })
+      pendingSelectNewestRef.current = true
+      await refreshWallets()
     } catch (error) {
       dispatch({
         type: "SET_ERROR",
@@ -262,7 +365,7 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     try {
       const walletId = await createWallet({
         walletName: walletName || "New Wallet",
-        accounts: ["ADDRESS_FORMAT_ETHEREUM"],
+        accounts: ["ADDRESS_FORMAT_ETHEREUM", "ADDRESS_FORMAT_SOLANA"],
       })
       if (walletId) {
         // Optimistic selection by wallet id; actual wallet object will be selected after refresh
@@ -276,43 +379,31 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const selectWallet = (wallet: Wallet) => {
-    dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
-    // Clear selected account so the effect can auto-select the first account of the new wallet
-    dispatch({ type: "SET_SELECTED_ACCOUNT", payload: null })
-    setPreferredWallet({
-      userId: user?.userId || "",
-      walletId: wallet.walletId,
-    })
-  }
-
-  const selectAccount = async (account: Account) => {
-    // Set account immediately to avoid UI blocking
-    dispatch({
-      type: "SET_SELECTED_ACCOUNT",
-      payload: { ...account, balance: 0n },
-    })
-
-    // Fetch balance in background and update when ready
-    try {
-      const balance = await getCachedBalance(account.address)
-      dispatch({
-        type: "SET_SELECTED_ACCOUNT",
-        payload: { ...account, balance },
-      })
-    } catch (error) {
-      console.error("Error fetching balance:", error)
-      // Keep the account selected with 0 balance on error
-    }
-  }
+  const accountIndexes = walletAccountIndexes(state.selectedWallet)
+  // The EVM account at the selected index (Solana as a fallback) — used for the
+  // avatar seed. Per-chain resolution elsewhere goes through accountForChain.
+  const selectedAccount =
+    accountForChain(
+      state.selectedWallet,
+      "ethereum",
+      state.selectedAccountIndex
+    ) ??
+    accountForChain(state.selectedWallet, "solana", state.selectedAccountIndex)
 
   const value = {
     state,
     dispatch,
+    networkMode,
+    setNetworkMode,
+    getBalances,
+    refreshBalances,
     newWallet,
     newWalletAccount,
     selectWallet,
-    selectAccount,
+    accountIndexes,
+    selectedAccountIndex: state.selectedAccountIndex,
+    setSelectedAccountIndex,
+    selectedAccount,
   }
 
   return (

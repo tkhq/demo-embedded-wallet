@@ -1,0 +1,30 @@
+# pnpm 10+ reads settings from this file instead of the deprecated `pnpm`
+# field in package.json. `overrides` pins transitive dependencies (React
+# version alignment + security bumps).
+
+# pnpm 10+ blocks dependency build scripts by default. Allow the native
+# packages we actually rely on: sharp (next/image optimization) and
+# unrs-resolver (eslint-config-next's import resolver).
+allowBuilds:
+  # Optional native speed-ups pulled in by @solana/web3.js + @solana/spl-token.
+  # Not needed in the browser bundle (JS fallbacks exist), so we don't build them.
+  bigint-buffer: false
+  bufferutil: false
+  # Needed by tsx (dev-only TS runner for scripts/), which bundles esbuild.
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  utf-8-validate: false
+overrides:
+  react: ^19.2.7
+  react-dom: ^19.2.7
+  elliptic: '>=6.6.1'
+  axios: '>=1.13.5'
+  form-data: '>=4.0.4'
+  ws: '>=7.5.10'
+  base-x: ^4.0.0
+  jws: '>=3.2.3'
+  h3: '>=1.15.5'
+  tar: '>=7.5.8'
+  '@babel/runtime': '>=7.26.10'
+  js-yaml: '>=4.1.1'

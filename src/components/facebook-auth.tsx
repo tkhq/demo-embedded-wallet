@@ -1,22 +1,29 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { SiFacebook } from "@icons-pack/react-simple-icons"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
+import { toast } from "sonner"
+
+import { isUserCancelError } from "@/lib/utils"
 
 import { Button } from "./ui/button"
 import { Skeleton } from "./ui/skeleton"
 
 const FacebookAuth = () => {
   const { handleFacebookOauth, clientState } = useTurnkey()
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    setReady(!!clientState)
-  }, [clientState])
+  const ready = !!clientState
 
   const onClick = async () => {
-    await handleFacebookOauth({ openInPage: false })
+    try {
+      await handleFacebookOauth({ openInPage: false })
+      // Rely on user state change to redirect elsewhere in the app
+    } catch (error) {
+      // Closing the popup rejects with USER_CANCELED — not an error to surface.
+      if (isUserCancelError(error)) return
+      const message =
+        error instanceof Error ? error.message : "Facebook login failed"
+      toast.error(message)
+    }
   }
 
   return (

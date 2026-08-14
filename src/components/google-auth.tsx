@@ -1,27 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { SiGoogle } from "@icons-pack/react-simple-icons"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { toast } from "sonner"
 
+import { isUserCancelError } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const GoogleAuth = () => {
   const { handleGoogleOauth, clientState } = useTurnkey()
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    setReady(!!clientState)
-  }, [clientState])
+  const ready = !!clientState
 
   const onClick = async () => {
     try {
       await handleGoogleOauth({ openInPage: false })
       // Rely on user state change to redirect elsewhere in the app
-    } catch (error: any) {
-      const message: string = error?.message || "Google login failed"
+    } catch (error) {
+      if (isUserCancelError(error)) return
+      const message =
+        error instanceof Error ? error.message : "Google login failed"
       toast.error(message)
     }
   }
