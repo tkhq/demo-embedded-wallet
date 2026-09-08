@@ -24,6 +24,11 @@ import { getAddress, isAddress } from "viem"
 
 import { Account, AssetBalance, Wallet } from "@/types/turnkey"
 import { NETWORK_MODE_KEY } from "@/lib/constants"
+import {
+  fetchMainnetPrices,
+  PriceMap,
+  withMainnetEquivalentUsd,
+} from "@/lib/prices"
 
 interface WalletsState {
   loading: boolean
@@ -156,6 +161,10 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
   const backfilledWalletIdsRef = useRef<Set<string>>(new Set())
   // Monotonic id so a slower in-flight balance fetch can't overwrite a newer one.
   const balanceRequestIdRef = useRef(0)
+  // Cached mainnet spot prices used to value testnet balances for demonstration
+  // (see fetchBalances). Short TTL so a session picks up price moves without
+  // refetching on every balance refresh.
+  const pricesRef = useRef<{ map: PriceMap; fetchedAt: number } | null>(null)
 
   const selectWallet = (wallet: Wallet) => {
     dispatch({ type: "SET_SELECTED_WALLET", payload: wallet })
@@ -184,33 +193,64 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
 
       const organizationId = session.organizationId
       const requestId = ++balanceRequestIdRef.current
-      const entries = await Promise.all(
-        CHAIN_LIST.map(async (chain) => {
-          const account = accountForChain(wallet, chain.key, index)
-          if (!account) return [chain.key, [] as AssetBalance[]] as const
-          try {
-            const { balances = [] } = await httpClient.getWalletAddressBalances({
-              organizationId,
-              address: account.address,
-              caip2: caip2For(chain.key, mode),
-            })
-            return [chain.key, balances as AssetBalance[]] as const
-          } catch (error) {
-            console.error(
-              `Error fetching ${chain.key} balances for ${account.address}:`,
-              error
-            )
-            return [chain.key, [] as AssetBalance[]] as const
-          }
-        })
-      )
+
+      // On testnet, holdings have no market price, so value them at their
+      // mainnet counterpart's price for demonstration (see src/lib/prices.ts).
+      // Cached with a short TTL and fetched in parallel with the balances.
+      const PRICE_TTL_MS = 60_000
+      const pricesPromise: Promise<PriceMap | null> =
+        mode === "testnet"
+          ? (async () => {
+              const cached = pricesRef.current
+              if (cached && Date.now() - cached.fetchedAt < PRICE_TTL_MS) {
+                return cached.map
+              }
+              const map = await fetchMainnetPrices()
+              pricesRef.current = { map, fetchedAt: Date.now() }
+              return map
+            })()
+          : Promise.resolve(null)
+
+      const [entries, prices] = await Promise.all([
+        Promise.all(
+          CHAIN_LIST.map(async (chain) => {
+            const account = accountForChain(wallet, chain.key, index)
+            if (!account) return [chain.key, [] as AssetBalance[]] as const
+            try {
+              const { balances = [] } =
+                await httpClient.getWalletAddressBalances({
+                  organizationId,
+                  address: account.address,
+                  caip2: caip2For(chain.key, mode),
+                })
+              return [chain.key, balances as AssetBalance[]] as const
+            } catch (error) {
+              console.error(
+                `Error fetching ${chain.key} balances for ${account.address}:`,
+                error
+              )
+              return [chain.key, [] as AssetBalance[]] as const
+            }
+          })
+        ),
+        pricesPromise,
+      ])
 
       // Ignore stale responses (a newer fetch has started meanwhile).
       if (requestId !== balanceRequestIdRef.current) return
 
+      // Overlay the mainnet-equivalent USD value on testnet balances; mainnet
+      // keeps Turnkey's real display values untouched.
+      const pricedEntries = prices
+        ? entries.map(
+            ([key, balances]) =>
+              [key, withMainnetEquivalentUsd(key, balances, prices)] as const
+          )
+        : entries
+
       dispatch({
         type: "SET_BALANCES",
-        payload: Object.fromEntries(entries),
+        payload: Object.fromEntries(pricedEntries),
       })
     },
     [httpClient, session]
