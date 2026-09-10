@@ -14,7 +14,8 @@ const GoogleAuth = () => {
 
   const onClick = async () => {
     try {
-      await handleGoogleOauth({ openInPage: false })
+      // Use the in-page (full-page redirect) OAuth flow instead of a popup.
+      await handleGoogleOauth({ openInPage: true })
       // Rely on user state change to redirect elsewhere in the app
     } catch (error) {
       if (isUserCancelError(error)) return

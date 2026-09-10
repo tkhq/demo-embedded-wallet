@@ -15,10 +15,11 @@ const FacebookAuth = () => {
 
   const onClick = async () => {
     try {
-      await handleFacebookOauth({ openInPage: false })
+      // Use the in-page (full-page redirect) OAuth flow instead of a popup.
+      await handleFacebookOauth({ openInPage: true })
       // Rely on user state change to redirect elsewhere in the app
     } catch (error) {
-      // Closing the popup rejects with USER_CANCELED — not an error to surface.
+      // A cancelled flow rejects with USER_CANCELED — not an error to surface.
       if (isUserCancelError(error)) return
       const message =
         error instanceof Error ? error.message : "Facebook login failed"
