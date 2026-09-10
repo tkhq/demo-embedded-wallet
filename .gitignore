@@ -25,11 +25,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files (keep .env.example, which is the committed template)
+.env
 .env*.local
 
 # vercel
 .vercel
+
+# local tooling (per-machine editor/agent config)
+.claude/settings.local.json
 
 # typescript
 *.tsbuildinfo

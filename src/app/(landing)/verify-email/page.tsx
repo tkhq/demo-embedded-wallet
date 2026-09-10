@@ -21,6 +21,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { Icons } from "@/components/icons"
+import { PROVISION_MARKER } from "@/components/provision-on-signup"
 
 export default function VerifyEmailPage() {
   return (
@@ -33,11 +34,14 @@ export default function VerifyEmailPage() {
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { httpClient, signUpWithPasskey, completeOtp } = useTurnkey()
+  const { verifyOtp, signUpWithPasskey, completeOtp } = useTurnkey()
 
   const otpId = searchParams.get("id") || ""
   const email = searchParams.get("email") || ""
   const type = (searchParams.get("type") || "").toLowerCase()
+  // Email OTP is login-or-signup; auth.tsx sets new=1 when the account didn't
+  // exist. Passkey reaches this page only on signup, so it's always new.
+  const isNewAccount = type === "passkey" || searchParams.get("new") === "1"
 
   const [code, setCode] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -51,11 +55,28 @@ function VerifyEmailContent() {
       return
     }
 
+    // The encryption target bundle produced by initOtp is required to complete
+    // the OTP flow in react-wallet-kit v2. It was stashed keyed by otpId.
+    const otpEncryptionTargetBundle =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(`otp-bundle:${otpId}`) || ""
+        : ""
+
+    if (!otpEncryptionTargetBundle) {
+      toast.error("Verification session expired. Please restart sign in.")
+      router.replace("/")
+      return
+    }
+
     try {
       setSubmitting(true)
       if (type === "passkey") {
-        const res = await httpClient?.proxyVerifyOtp({ otpId, otpCode: code })
-        if (!res?.verificationToken) {
+        const { verificationToken } = await verifyOtp({
+          otpId,
+          otpCode: code,
+          otpEncryptionTargetBundle,
+        })
+        if (!verificationToken) {
           toast.error("Verification failed. Try again.")
           return
         }
@@ -63,25 +84,21 @@ function VerifyEmailContent() {
         await signUpWithPasskey({
           createSubOrgParams: {
             customWallet,
-            verificationToken: res.verificationToken,
+            verificationToken,
             userEmail: email,
           },
         })
+        sessionStorage.removeItem(`otp-bundle:${otpId}`)
+        // New sub-org → let the dashboard provision it (policies + Policy
+        // Manager + 2/2). See ProvisionOnSignup.
+        if (isNewAccount) sessionStorage.setItem(PROVISION_MARKER, "1")
         router.replace("/dashboard")
       } else if (type === "email") {
-        // completeOtp both verifies and logs in (or signs up) the user on the server
-        // Note: The SDK type shows completeOtp; the proxy method may be named proxyCompleteOtp if exposed.
-        // We call through httpClient to leverage the proxy/session handling.
-        // const complete =
-        //   (httpClient as any)?.completeOtp ||
-        //   (httpClient as any)?.proxyCompleteOtp
-        // if (!complete) {
-        //   throw new Error("Email OTP flow is not available in this build.")
-        // }
-
+        // completeOtp verifies the code and logs in (or signs up) the user
         await completeOtp({
           otpId,
           otpCode: code,
+          otpEncryptionTargetBundle,
           contact: email,
           otpType: OtpType.Email,
           createSubOrgParams: {
@@ -89,6 +106,8 @@ function VerifyEmailContent() {
             userEmail: email,
           },
         })
+        sessionStorage.removeItem(`otp-bundle:${otpId}`)
+        if (isNewAccount) sessionStorage.setItem(PROVISION_MARKER, "1")
         router.replace("/dashboard")
       }
     } catch (err: any) {
@@ -101,7 +120,17 @@ function VerifyEmailContent() {
     } finally {
       setSubmitting(false)
     }
-  }, [otpId, email, code, httpClient, signUpWithPasskey, router])
+  }, [
+    otpId,
+    email,
+    code,
+    type,
+    isNewAccount,
+    verifyOtp,
+    signUpWithPasskey,
+    completeOtp,
+    router,
+  ])
 
   return (
     <main className="flex w-full flex-col items-center justify-center">
