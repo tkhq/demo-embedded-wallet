@@ -95,6 +95,8 @@ export function TurnkeyConfigProvider({
             // session still fully expires, send the user back to the landing
             // page to re-authenticate.
             if (typeof window !== "undefined") {
+              // Hard reload (not router.push) to clear in-memory session state.
+              // eslint-disable-next-line @next/next/no-location-assign-relative-destination
               window.location.href = "/"
             }
           },
