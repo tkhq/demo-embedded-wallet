@@ -9,6 +9,11 @@ import {
   useReducer,
   useRef,
 } from "react"
+import { useTurnkey } from "@turnkey/react-wallet-kit"
+import { useLocalStorage } from "usehooks-ts"
+import { getAddress, isAddress } from "viem"
+
+import { Account, AssetBalance, Wallet } from "@/types/turnkey"
 import {
   accountForChain,
   byWalletCreation,
@@ -18,11 +23,6 @@ import {
   NetworkMode,
   walletAccountIndexes,
 } from "@/config/networks"
-import { useTurnkey } from "@turnkey/react-wallet-kit"
-import { useLocalStorage } from "usehooks-ts"
-import { getAddress, isAddress } from "viem"
-
-import { Account, AssetBalance, Wallet } from "@/types/turnkey"
 import { NETWORK_MODE_KEY } from "@/lib/constants"
 import {
   fetchMainnetPrices,
@@ -263,7 +263,12 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
         networkMode,
         state.selectedAccountIndex
       ),
-    [fetchBalances, state.selectedWallet, networkMode, state.selectedAccountIndex]
+    [
+      fetchBalances,
+      state.selectedWallet,
+      networkMode,
+      state.selectedAccountIndex,
+    ]
   )
 
   // Re-fetch balances whenever the selected wallet, network mode, or selected
@@ -345,7 +350,11 @@ export function WalletsProvider({ children }: { children: ReactNode }) {
     if (!state.selectedWallet) {
       selectWallet([...normalizedWallets].sort(byWalletCreation)[0])
     }
-  }, [hookWallets, user])
+    // session?.organizationId is a dep so this re-runs once the session lands
+    // (e.g. post OAuth redirect); state.selectedWallet is omitted to avoid a
+    // re-selection loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hookWallets, user, session?.organizationId])
 
   // Backfill a Solana account for wallets created before multi-chain support.
   useEffect(() => {
