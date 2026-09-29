@@ -65,16 +65,16 @@ from the dashboard, the app only needs two variables:
 
 ### Required
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_ORGANIZATION_ID` | Your Turnkey parent organization ID |
-| `NEXT_PUBLIC_AUTH_PROXY_ID` | Auth Proxy config ID (dashboard → Embedded Wallets → Configuration) |
+| Variable                      | Description                                                         |
+| ----------------------------- | ------------------------------------------------------------------- |
+| `NEXT_PUBLIC_ORGANIZATION_ID` | Your Turnkey parent organization ID                                 |
+| `NEXT_PUBLIC_AUTH_PROXY_ID`   | Auth Proxy config ID (dashboard → Embedded Wallets → Configuration) |
 
 ### Optional
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_BASE_URL` | Turnkey API base URL (defaults to `https://api.turnkey.com`) |
+| Variable                     | Description                                                       |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `NEXT_PUBLIC_BASE_URL`       | Turnkey API base URL (defaults to `https://api.turnkey.com`)      |
 | `NEXT_PUBLIC_AUTH_PROXY_URL` | Auth Proxy endpoint (defaults to `https://authproxy.turnkey.com`) |
 
 Everything else — which auth methods appear, OAuth client IDs, OAuth redirect
@@ -82,6 +82,20 @@ URL, session expiration, OTP length/type, email branding — is configured on th
 Turnkey dashboard and fetched by the SDK via the Auth Proxy's
 `wallet_kit_config`. See [Developer Mode](#developer-mode) for overriding the
 presentation of these at runtime.
+
+### Dashboard setting: account lookups
+
+The passkey sign-in flow calls `proxyGetAccount` to check whether an account
+already exists for the entered email, so it can route to login vs. sign-up
+before the user authenticates. For that pre-login lookup to succeed, disable
+**Require token for account lookups** in the Auth Proxy configuration (dashboard
+→ Embedded Wallets → Configuration).
+
+With that setting off, account-existence lookups are unauthenticated (an email
+can be probed for whether it has an account). That is acceptable for a demo; a
+production app should leave the setting enabled and route login vs. sign-up with
+an authenticated lookup (e.g. server-side, or after an OTP verification token is
+obtained).
 
 ## Architecture Overview
 
@@ -303,6 +317,7 @@ a **Developer Mode** so regular users never see it.
 ### Provider config
 
 `src/config/turnkey.ts` defines the static `TurnkeyProviderConfig`:
+
 - Organization ID + Auth Proxy config ID (+ optional API/proxy URL overrides)
 - `auth.autoRefreshSession` and `createSuborgParams` per method, each creating a
   default Ethereum wallet (`m/44'/60'/0'/0/0`)
@@ -314,10 +329,10 @@ OAuth client IDs, the redirect URL, and enabled auth methods are intentionally
 
 ### SDK packages
 
-| Package | Usage |
-|---|---|
+| Package                          | Usage                                                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@turnkey/react-wallet-kit` (v2) | `TurnkeyProvider`, `useTurnkey()` for auth, wallet CRUD, balances (`getWalletAddressBalances`), signing/sending (`handleSendTransaction`), import/export |
-| `@turnkey/http` | Type imports (`TurnkeyApiTypes`) used in `src/types/turnkey.ts` |
+| `@turnkey/http`                  | Type imports (`TurnkeyApiTypes`) used in `src/types/turnkey.ts`                                                                                          |
 
 ## Troubleshooting
 
@@ -393,13 +408,16 @@ src/
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start Next.js development server |
-| `pnpm build` | Production build (validates env vars) |
-| `pnpm build:local` | Production build with `SKIP_ENV_VALIDATION=1` |
-| `pnpm start` | Start production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm format` | Format code with Prettier |
-| `pnpm format:check` | Check formatting without writing |
+| Command             | Description                                   |
+| ------------------- | --------------------------------------------- |
+| `pnpm dev`          | Start Next.js development server              |
+| `pnpm build`        | Production build (validates env vars)         |
+| `pnpm build:local`  | Production build with `SKIP_ENV_VALIDATION=1` |
+| `pnpm start`        | Start production server                       |
+| `pnpm lint`         | Run ESLint                                    |
+| `pnpm format`       | Format code with Prettier                     |
+| `pnpm format:check` | Check formatting without writing              |
+
+```
+
 ```

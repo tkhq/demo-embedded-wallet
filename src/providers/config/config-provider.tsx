@@ -81,16 +81,10 @@ export function TurnkeyConfigProvider({
       <TurnkeyProvider
         config={config}
         callbacks={{
-          // Fires on every successful auth with action SIGNUP | LOGIN,
-          // uniformly across passkey / email / OAuth / wallet. We mark new
-          // sub-orgs (SIGNUP only) so ProvisionOnSignup applies policies + the
-          // Policy Manager + 2/2 on the dashboard. This is the coverage for the
-          // OAuth and wallet paths (which have no pre-flight existence check);
-          // it's redundant-but-safe with verify-email's explicit marker for the
-          // email/passkey paths, and idempotent downstream. LOGIN never marks,
-          // so existing sub-orgs (e.g. the sales team's) are never auto-migrated
-          // — they migrate deliberately via Settings → Admin.
+          // Mark new sub-orgs (SIGNUP only) so ProvisionOnSignup runs; LOGIN
+          // never marks, so existing sub-orgs aren't auto-migrated.
           onAuthenticationSuccess: ({ action }) => {
+            setDevMode(false) // close the Config Panel after auth
             if (typeof window === "undefined") return
             if (String(action) === "SIGNUP") {
               sessionStorage.setItem(PROVISION_MARKER, "1")

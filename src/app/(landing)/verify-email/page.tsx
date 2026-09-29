@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit"
+import { REGEXP_ONLY_DIGITS, REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
 import { toast } from "sonner"
 
 import { customWallet } from "@/config/turnkey"
@@ -17,7 +18,6 @@ import {
 import {
   InputOTP,
   InputOTPGroup,
-  InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { Icons } from "@/components/icons"
@@ -34,19 +34,26 @@ export default function VerifyEmailPage() {
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { verifyOtp, signUpWithPasskey, completeOtp } = useTurnkey()
+  const { verifyOtp, completeOtp, signUpWithOtp, createPasskey, config } =
+    useTurnkey()
+
+  // OTP length + alphabet come from org config (SDK-resolved from the Auth Proxy).
+  const otpLength = Number(config?.auth?.otpLength) || 6
+  const otpAlphanumeric = config?.auth?.otpAlphanumeric ?? true
+  const otpPattern = otpAlphanumeric
+    ? REGEXP_ONLY_DIGITS_AND_CHARS
+    : REGEXP_ONLY_DIGITS
 
   const otpId = searchParams.get("id") || ""
   const email = searchParams.get("email") || ""
   const type = (searchParams.get("type") || "").toLowerCase()
-  // Email OTP is login-or-signup; auth.tsx sets new=1 when the account didn't
-  // exist. Passkey reaches this page only on signup, so it's always new.
-  const isNewAccount = type === "passkey" || searchParams.get("new") === "1"
+  // Passkey reaches this page only on signup (always a new sub-org).
+  const isNewAccount = type === "passkey"
 
   const [code, setCode] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
-  const isSixDigits = useMemo(() => code.length === 6, [code])
+  const isComplete = useMemo(() => code.length === otpLength, [code, otpLength])
 
   const handleVerify = useCallback(async () => {
     if (!otpId || !email || (type !== "passkey" && type !== "email")) {
@@ -81,16 +88,32 @@ function VerifyEmailContent() {
           return
         }
 
-        await signUpWithPasskey({
+        const passkeyName = "Default Passkey"
+        const passkey = await createPasskey({ name: passkeyName })
+        if (!passkey) {
+          toast.error("Passkey creation failed. Try again.")
+          return
+        }
+
+        // Passkey signup goes through signUpWithOtp with the passkey attached
+        // as an authenticator, so the email's OTP verification token is honored.
+        await signUpWithOtp({
+          verificationToken,
+          contact: email,
+          otpType: OtpType.Email,
           createSubOrgParams: {
+            userName: "Passkey User",
             customWallet,
-            verificationToken,
-            userEmail: email,
+            authenticators: [
+              {
+                authenticatorName: passkeyName,
+                challenge: passkey.encodedChallenge,
+                attestation: passkey.attestation,
+              },
+            ],
           },
         })
         sessionStorage.removeItem(`otp-bundle:${otpId}`)
-        // New sub-org → let the dashboard provision it (policies + Policy
-        // Manager + 2/2). See ProvisionOnSignup.
         if (isNewAccount) sessionStorage.setItem(PROVISION_MARKER, "1")
         router.replace("/dashboard")
       } else if (type === "email") {
@@ -107,7 +130,6 @@ function VerifyEmailContent() {
           },
         })
         sessionStorage.removeItem(`otp-bundle:${otpId}`)
-        if (isNewAccount) sessionStorage.setItem(PROVISION_MARKER, "1")
         router.replace("/dashboard")
       }
     } catch (err: any) {
@@ -127,8 +149,9 @@ function VerifyEmailContent() {
     type,
     isNewAccount,
     verifyOtp,
-    signUpWithPasskey,
     completeOtp,
+    signUpWithOtp,
+    createPasskey,
     router,
   ])
 
@@ -141,30 +164,29 @@ function VerifyEmailContent() {
             Please verify your email
           </CardTitle>
           <CardDescription className="text-center">
-            Enter the 6-digit code sent to{" "}
+            Enter the {otpLength}-character code sent to{" "}
             <span className="font-semibold">{email}</span>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex justify-center">
-            <InputOTP maxLength={6} value={code} onChange={setCode}>
+            <InputOTP
+              maxLength={otpLength}
+              pattern={otpPattern}
+              value={code}
+              onChange={setCode}
+            >
               <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-              </InputOTPGroup>
-              <InputOTPSeparator />
-              <InputOTPGroup>
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
+                {Array.from({ length: otpLength }).map((_, i) => (
+                  <InputOTPSlot key={i} index={i} />
+                ))}
               </InputOTPGroup>
             </InputOTP>
           </div>
 
           <LoadingButton
             className="w-full font-semibold"
-            disabled={!isSixDigits || submitting}
+            disabled={!isComplete || submitting}
             loading={submitting}
             onClick={handleVerify}
           >

@@ -109,15 +109,7 @@ function AuthContent() {
   const handleEmailLogin = async (email: Email) => {
     setLoadingAction("email")
     try {
-      // Email OTP is login-or-signup. Check existence up front (same as the
-      // passkey path) so the verify step knows whether it's a NEW sub-org and
-      // should trigger provisioning (policies + Policy Manager + 2/2).
-      const account = await httpClient?.proxyGetAccount({
-        filterType: "EMAIL",
-        filterValue: email,
-      })
-      const isNew = !account?.organizationId
-
+      // Email OTP is login-or-signup; no pre-flight account lookup needed.
       const { otpId, otpEncryptionTargetBundle } = await initOtp({
         otpType: OtpType.Email,
         contact: email,
@@ -128,7 +120,7 @@ function AuthContent() {
         router.push(
           `/verify-email?id=${encodeURIComponent(otpId)}&email=${encodeURIComponent(
             email
-          )}&type=email&new=${isNew ? "1" : "0"}`
+          )}&type=email`
         )
       }
     } finally {
