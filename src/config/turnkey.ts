@@ -93,10 +93,10 @@ export const turnkeyConfig: TurnkeyProviderConfig = {
   },
 
   // Static, in-code UI defaults. This is the "pass a static config" reference
-  // pattern; the Developer Mode panel mutates a copy of this config at runtime.
+  // pattern; the Config Panel mutates a copy of this config at runtime.
   // Auth-method visibility (ui.authModal.methods) is intentionally left unset so
   // it defaults to whatever is enabled in the Auth Proxy dashboard config; the
-  // Dev Mode panel can override it live. Facebook is the exception (see
+  // Config Panel can override it live. Facebook is the exception (see
   // `facebookOauth` above): its button is surfaced only when an App ID is set,
   // since it's configured in-code rather than via the dashboard.
   ui: {

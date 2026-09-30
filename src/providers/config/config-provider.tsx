@@ -1,15 +1,14 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useContext, useMemo, useState } from "react"
 import {
   TurnkeyProvider,
   TurnkeyProviderConfig,
 } from "@turnkey/react-wallet-kit"
-import { useLocalStorage } from "usehooks-ts"
 
 import { turnkeyConfig as defaultConfig } from "@/config/turnkey"
 import { cn } from "@/lib/utils"
-import { DevTools } from "@/components/dev-config-panel"
+import { ConfigPanel } from "@/components/config-panel"
 import { PROVISION_MARKER } from "@/components/provision-on-signup"
 
 type TurnkeyConfigContextType = {
@@ -17,8 +16,8 @@ type TurnkeyConfigContextType = {
   setConfig: (
     updater: (prev: TurnkeyProviderConfig) => TurnkeyProviderConfig
   ) => void
-  devMode: boolean
-  setDevMode: (value: boolean) => void
+  configPanelOpen: boolean
+  setConfigPanelOpen: (value: boolean) => void
 }
 
 const TurnkeyConfigContext = createContext<
@@ -39,7 +38,7 @@ export function useTurnkeyConfig() {
  * Owns the (mutable) TurnkeyProviderConfig and renders the TurnkeyProvider with
  * it. This mirrors the `wallets.turnkey.com` reference demo's runtime-config
  * pattern: the config starts from the static `turnkeyConfig` and can be mutated
- * live by the Developer Mode panel. Mutating the config re-initializes the
+ * live by the Config Panel. Mutating the config re-initializes the
  * Turnkey client (sessions persist via storage), which is acceptable for a demo.
  *
  * All configurations remain Auth-Proxy-backed; the panel only overrides
@@ -51,29 +50,19 @@ export function TurnkeyConfigProvider({
   children: React.ReactNode
 }) {
   const [config, setConfig] = useState<TurnkeyProviderConfig>(defaultConfig)
-  // `initializeWithValue: false` returns the default on the first render (server
-  // and client alike) and reads the stored value in an effect afterwards. This
-  // keeps the initial client render identical to the SSR output, avoiding a
-  // hydration mismatch on the conditionally-rendered <DevTools />.
-  const [devMode, setDevMode] = useLocalStorage("tk-dev-mode", false, {
-    initializeWithValue: false,
-  })
-
-  // Allow enabling Developer Mode via a `?dev` query param (persisted after).
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const params = new URLSearchParams(window.location.search)
-    if (params.has("dev")) setDevMode(true)
-  }, [setDevMode])
+  // Config Panel open state. Opened from the toggle on the login card and not
+  // persisted: the panel only affects login/signup, and its overrides reset on
+  // reload anyway.
+  const [configPanelOpen, setConfigPanelOpen] = useState(false)
 
   const value = useMemo<TurnkeyConfigContextType>(
     () => ({
       config,
       setConfig: (updater) => setConfig((prev) => updater(prev)),
-      devMode,
-      setDevMode,
+      configPanelOpen,
+      setConfigPanelOpen,
     }),
-    [config, devMode, setDevMode]
+    [config, configPanelOpen, setConfigPanelOpen]
   )
 
   return (
@@ -84,7 +73,7 @@ export function TurnkeyConfigProvider({
           // Mark new sub-orgs (SIGNUP only) so ProvisionOnSignup runs; LOGIN
           // never marks, so existing sub-orgs aren't auto-migrated.
           onAuthenticationSuccess: ({ action }) => {
-            setDevMode(false) // close the Config Panel after auth
+            setConfigPanelOpen(false) // close the Config Panel after auth
             if (typeof window === "undefined") return
             if (String(action) === "SIGNUP") {
               sessionStorage.setItem(PROVISION_MARKER, "1")
@@ -109,16 +98,17 @@ export function TurnkeyConfigProvider({
         <div
           className={cn(
             "transition-[padding] duration-300 ease-in-out",
-            devMode && "sm:pr-[380px]"
+            configPanelOpen && "sm:pr-[380px]"
           )}
         >
           {children}
         </div>
-        {/* Mounted INSIDE TurnkeyProvider so panel actions can call useTurnkey()
-            (e.g. the Co-signing setup). The sheet is a controlled component
-            whose open state is `devMode` (so it animates open/closed), and it's
-            fixed-position, so its DOM location here doesn't affect layout. */}
-        <DevTools />
+        {/* Mounted INSIDE TurnkeyProvider so the panel can call useTurnkey()
+            (to read the resolved auth methods). The sheet is a controlled
+            component whose open state is `configPanelOpen` (so it animates
+            open/closed), and it's fixed-position, so its DOM location here
+            doesn't affect layout. */}
+        <ConfigPanel />
       </TurnkeyProvider>
     </TurnkeyConfigContext.Provider>
   )

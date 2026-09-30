@@ -1,7 +1,7 @@
 "use client"
 
 import { useTurnkeyConfig } from "@/providers/config/config-provider"
-import { TurnkeyProviderConfig } from "@turnkey/react-wallet-kit"
+import { TurnkeyProviderConfig, useTurnkey } from "@turnkey/react-wallet-kit"
 
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -52,17 +52,19 @@ function Toggle({
 }
 
 /**
- * Config Panel. Its open/closed state IS `devMode`: the sheet is open exactly
- * when `devMode` is true, and closing it (via the landing-page toggle, the X,
- * or Escape) sets `devMode` false.
+ * Config Panel. A controlled sheet whose open state is `configPanelOpen`;
+ * closing it (via the login-card toggle, the X, or Escape) sets it false.
  * Lets you mutate the live TurnkeyProviderConfig — toggling which auth methods
- * appear in the login modal — without affecting the normal user experience. All
- * changes are presentation overrides on top of the Auth-Proxy-backed config.
+ * appear on the login card. All changes are presentation overrides on top of
+ * the Auth-Proxy-backed config.
  */
-export function DevTools() {
-  const { config, setConfig, devMode, setDevMode } = useTurnkeyConfig()
+export function ConfigPanel() {
+  const { setConfig, configPanelOpen, setConfigPanelOpen } = useTurnkeyConfig()
+  // Show the effective values (Auth Proxy defaults + overrides), not just the
+  // local overrides, so the toggles match what the login card renders.
+  const { config } = useTurnkey()
 
-  const methods = config.ui?.authModal?.methods ?? {}
+  const methods = config?.ui?.authModal?.methods ?? {}
 
   const setMethod = (key: keyof AuthMethods, value: boolean) => {
     setConfig((prev) => ({
@@ -81,7 +83,11 @@ export function DevTools() {
   }
 
   return (
-    <Sheet open={devMode} onOpenChange={setDevMode} modal={false}>
+    <Sheet
+      open={configPanelOpen}
+      onOpenChange={setConfigPanelOpen}
+      modal={false}
+    >
       <SheetContent
         showOverlay={false}
         className="w-[340px] overflow-y-auto sm:w-[380px]"
@@ -109,7 +115,7 @@ export function DevTools() {
               <Toggle
                 key={key}
                 label={label}
-                checked={methods[key] ?? true}
+                checked={methods[key] ?? false}
                 onChange={(value) => setMethod(key, value)}
               />
             ))}

@@ -31,13 +31,13 @@ export const env = createEnv({
     // your dev origin. Whatever value you use must be whitelisted in each
     // enabled provider's console.
     NEXT_PUBLIC_OAUTH_REDIRECT_URI: z.string().min(1).optional(),
-    // Optional (dev/demo only): the PUBLIC key of the "Policy Manager" P-256
-    // API keypair, used by the Dev Mode "Add Policy Manager as root user"
-    // action to make a sub-org a 2/2 co-signing setup. Only the PUBLIC half
+    // Optional (demo only): the PUBLIC key of the "Policy Manager" P-256
+    // API keypair, used by signup provisioning and the Settings → Admin
+    // "Enable co-signing" action to make a sub-org a 2/2 co-signing setup. Only the PUBLIC half
     // belongs here — it is safe to expose. The PRIVATE half must NEVER be a
     // NEXT_PUBLIC_ var; keep it in a secret store and only load it server-side
-    // when Policy Manager actually signs/approves. Leave unset to hide the
-    // action.
+    // when Policy Manager actually signs/approves. If unset, co-signing setup
+    // fails with an error.
     NEXT_PUBLIC_POLICY_MANAGER_PUBLIC_KEY: z.string().min(1).optional(),
   },
   server: {},

@@ -15,6 +15,10 @@ type TurnkeyHttpClient = NonNullable<
   ReturnType<typeof useTurnkey>["httpClient"]
 >
 
+export type ActivityStatus = Awaited<
+  ReturnType<TurnkeyHttpClient["updateRootQuorum"]>
+>["activity"]["status"]
+
 const POLICY_MANAGER_PUBLIC_KEY = env.NEXT_PUBLIC_POLICY_MANAGER_PUBLIC_KEY
 
 export interface RootQuorum {
@@ -101,20 +105,23 @@ export async function addPolicyManager(
  * Set the root-quorum threshold, re-sending the existing userIds
  * (updateRootQuorum overwrites the set). Idempotent: no-op if already at
  * `threshold`. At a 2/2 sub-org a downgrade lands in CONSENSUS_NEEDED awaiting
- * the Policy Manager's approval; a 1→2 bump executes immediately.
+ * the Policy Manager's approval; a 1→2 bump executes immediately. Returns the
+ * activity status — the SDK resolves (not throws) on CONSENSUS_NEEDED, so
+ * callers check this to tell a completed change from a pending one.
  */
 export async function setThreshold(
   client: TurnkeyHttpClient,
   organizationId: string,
   threshold: number
-): Promise<void> {
+): Promise<ActivityStatus> {
   const quorum = await readQuorum(client, organizationId)
-  if (quorum.threshold === threshold) return
-  await client.updateRootQuorum({
+  if (quorum.threshold === threshold) return "ACTIVITY_STATUS_COMPLETED"
+  const { activity } = await client.updateRootQuorum({
     organizationId,
     threshold,
     userIds: quorum.userIds,
   })
+  return activity.status
 }
 
 /**

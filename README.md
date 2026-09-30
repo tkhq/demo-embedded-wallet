@@ -19,7 +19,7 @@ There are no server actions, no third-party RPC/indexer, and no server API keys.
 - [Architecture Overview](#architecture-overview)
 - [Key Flows (Sequence Diagrams)](#key-flows-sequence-diagrams)
 - [Feature Tour (What the App Does)](#feature-tour-what-the-app-does)
-- [Developer Mode](#developer-mode)
+- [Config Panel](#config-panel)
 - [Turnkey Integration Details](#turnkey-integration-details)
 - [Troubleshooting](#troubleshooting)
 - [Target Network](#target-network)
@@ -80,7 +80,7 @@ from the dashboard, the app only needs two variables:
 Everything else — which auth methods appear, OAuth client IDs, OAuth redirect
 URL, session expiration, OTP length/type, email branding — is configured on the
 Turnkey dashboard and fetched by the SDK via the Auth Proxy's
-`wallet_kit_config`. See [Developer Mode](#developer-mode) for overriding the
+`wallet_kit_config`. See [Config Panel](#config-panel) for overriding the
 presentation of these at runtime.
 
 ### Dashboard setting: account lookups
@@ -148,7 +148,7 @@ AuthGuard
 session (normalized into typed `Wallet[]` with checksummed addresses) and
 fetches per-account balances from Turnkey's Balances API. The
 `TurnkeyConfigProvider` owns the config passed to `TurnkeyProvider`; the
-[Developer Mode](#developer-mode) panel mutates that config at runtime.
+[Config Panel](#config-panel) mutates that config at runtime.
 
 ## Key Flows (Sequence Diagrams)
 
@@ -295,20 +295,19 @@ iframe flow).
 - `/settings` lists passkeys with creation date and credential ID; users can add
   or remove passkeys (removal disabled when only one remains).
 
-## Developer Mode
+## Config Panel
 
 The app ships a runtime config panel modeled on the
-[`wallets.turnkey.com`](https://wallets.turnkey.com) reference demo, gated behind
-a **Developer Mode** so regular users never see it.
+[`wallets.turnkey.com`](https://wallets.turnkey.com) reference demo.
 
-- Enable it by appending `?dev` to any URL (persisted in `localStorage` under
-  `tk-dev-mode`). A floating gear button appears bottom-right.
-- The panel (`src/components/dev-config-panel.tsx`) mutates the live
+- Open it with the **Config Panel** toggle under the login card. It closes
+  automatically once you authenticate (it only affects login/signup).
+- The panel (`src/components/config-panel.tsx`) mutates the live
   `TurnkeyProviderConfig` held by `TurnkeyConfigProvider`
   (`src/providers/config/config-provider.tsx`): toggle which auth methods appear
-  in the login modal (`ui.authModal.methods`), dark mode, and border radius.
-  Changes apply immediately (the Turnkey client re-initializes; sessions
-  persist).
+  on the login card (`ui.authModal.methods`). Each toggle starts from the method's
+  Auth Proxy (dashboard) setting. Changes apply immediately (the Turnkey client
+  re-initializes; sessions persist) and reset on reload.
 - These are presentation overrides on top of the Auth-Proxy-backed config — the
   architecture is identical to production; only the config source differs.
 
@@ -321,8 +320,8 @@ a **Developer Mode** so regular users never see it.
 - Organization ID + Auth Proxy config ID (+ optional API/proxy URL overrides)
 - `auth.autoRefreshSession` and `createSuborgParams` per method, each creating a
   default Ethereum wallet (`m/44'/60'/0'/0/0`)
-- A `ui` block (dark mode, border radius) used as the Developer Mode panel's
-  starting state
+- A `ui` block with static UI defaults (dark mode, border radius), which the
+  Config Panel starts from
 
 OAuth client IDs, the redirect URL, and enabled auth methods are intentionally
 **not** in code — they live in the dashboard and are served via the Auth Proxy.
@@ -382,7 +381,7 @@ src/
 │   ├── passkeys.tsx / add-passkey.tsx / passkey-item.tsx     # Passkey management
 │   ├── auth-guard.tsx                 # Route protection (AuthGuard + InverseAuthGuard)
 │   ├── nav-menu.tsx / account.tsx     # Navigation + account dropdown
-│   ├── dev-config-panel.tsx           # Developer Mode config panel (DevTools)
+│   ├── config-panel.tsx               # Config Panel (runtime auth-method overrides)
 │   ├── mode-toggle.tsx / features.tsx / icons.tsx
 │   └── ui/                            # shadcn/ui primitives
 ├── config/
@@ -391,7 +390,7 @@ src/
 ├── providers/
 │   ├── index.tsx                      # Root provider hierarchy (Theme > TurnkeyConfig)
 │   ├── theme-provider.tsx             # next-themes wrapper
-│   ├── config/config-provider.tsx     # Mutable config + owns TurnkeyProvider + Dev Mode
+│   ├── config/config-provider.tsx     # Mutable config + owns TurnkeyProvider + Config Panel
 │   └── wallet-provider.tsx            # Wallet/account CRUD, selection, Turnkey balances
 ├── hooks/
 │   └── use-token-price.tsx            # ETH/USD derived from Turnkey balance display

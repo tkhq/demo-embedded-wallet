@@ -50,8 +50,9 @@ function AuthContent() {
     loginWithPasskey,
     loginOrSignupWithWallet,
     walletProviders,
+    config,
   } = useTurnkey()
-  const { config, devMode, setDevMode } = useTurnkeyConfig()
+  const { configPanelOpen, setConfigPanelOpen } = useTurnkeyConfig()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [walletDialogOpen, setWalletDialogOpen] = useState(false)
 
@@ -151,14 +152,13 @@ function AuthContent() {
     }
   }
 
-  // Which auth methods to surface on this custom login card. Mirrors the RWK
-  // auth modal: when a method is unset in the config it defaults to enabled, so
-  // with Dev Mode off every button shows (unchanged behavior). The Dev Mode
-  // panel writes explicit overrides into ui.authModal.methods, which then hide
-  // or show the matching buttons here.
-  const methods = config.ui?.authModal?.methods ?? {}
+  // Which auth methods to surface on this custom login card. `config` here is
+  // the SDK-resolved config: the methods enabled in the Auth Proxy (dashboard),
+  // with any Config Panel overrides applied on top — the same values the RWK
+  // auth modal uses. Nothing shows until that config has loaded.
+  const methods = config?.ui?.authModal?.methods ?? {}
   const isEnabled = (key: keyof NonNullable<typeof methods>) =>
-    methods[key] ?? true
+    methods[key] ?? false
 
   const passkeyEnabled = isEnabled("passkeyAuthEnabled")
   const emailEnabled = isEnabled("emailOtpAuthEnabled")
@@ -266,13 +266,13 @@ function AuthContent() {
         <Button
           type="button"
           size="sm"
-          variant={devMode ? "default" : "outline"}
+          variant={configPanelOpen ? "default" : "outline"}
           className="h-7 gap-1.5 px-2.5 text-xs"
-          onClick={() => setDevMode(!devMode)}
-          aria-pressed={devMode}
+          onClick={() => setConfigPanelOpen(!configPanelOpen)}
+          aria-pressed={configPanelOpen}
         >
           <Settings2 className="h-3.5 w-3.5" />
-          {devMode ? "On" : "Off"}
+          {configPanelOpen ? "On" : "Off"}
         </Button>
       </div>
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>

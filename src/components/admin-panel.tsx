@@ -27,8 +27,8 @@ import { AwaitingCoSignature } from "@/components/awaiting-cosignature"
 import { PendingApprovals } from "@/components/pending-approvals"
 
 // A sensitive action that requires an explicit warning + confirmation before it
-// runs (this is what replaces the dev-gate — anyone authenticated can act, but
-// only after acknowledging the consequence).
+// runs — anyone authenticated can act, but only after acknowledging the
+// consequence.
 type PendingAction = {
   title: string
   description: string
@@ -40,8 +40,8 @@ type PendingAction = {
 /**
  * Admin section (Settings). Lets an authenticated user manage their sub-org's
  * root quorum: attach the business Policy Manager key (migrating an existing
- * sub-org) and flip the quorum between 1-of-2 and 2-of-2. Not dev-gated — each
- * sensitive action is behind a warning dialog explaining the control impact.
+ * sub-org) and flip the quorum between 1-of-2 and 2-of-2. Each sensitive
+ * action is behind a warning dialog explaining the control impact.
  */
 export function AdminPanel() {
   const { httpClient, session, user } = useTurnkey()
@@ -49,6 +49,9 @@ export function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState<PendingAction | null>(null)
   const [running, setRunning] = useState(false)
+  // Bumped after an action to remount (and so reload) the awaiting list, e.g.
+  // so a just-requested downgrade shows as pending without a page refresh.
+  const [awaitingKey, setAwaitingKey] = useState(0)
 
   const organizationId = session?.organizationId
   const userId = user?.userId
@@ -98,6 +101,7 @@ export function AdminPanel() {
     try {
       await pending.run()
       await refresh()
+      setAwaitingKey((k) => k + 1)
       setPending(null)
     } catch (err) {
       console.error("Admin action failed:", err)
@@ -156,21 +160,15 @@ export function AdminPanel() {
       "Lowering from 2-of-2 requires the Policy Manager to co-approve, so this stays pending until it does. While at 1-of-2, either root user — including the Policy Manager — can act unilaterally.",
     confirmLabel: "Request 1 of 2",
     run: async () => {
-      try {
-        await setThreshold(httpClient, organizationId, 1)
+      // At 2/2, the downgrade needs the Policy Manager to co-approve, so it
+      // lands as CONSENSUS_NEEDED rather than completing immediately.
+      const status = await setThreshold(httpClient, organizationId, 1)
+      if (status === "ACTIVITY_STATUS_COMPLETED") {
         toast.success("Root quorum reduced to 1 of 2.")
-      } catch (err) {
-        // At 2/2, the downgrade needs the Policy Manager to co-approve, so it
-        // lands as a consensus-needed request rather than completing
-        // immediately. Treat that as a successful pending request, not a failure.
-        const msg = err instanceof Error ? `${err.name} ${err.message}` : ""
-        if (/consensus/i.test(msg)) {
-          toast.message(
-            "Downgrade requested — awaiting Policy Manager approval."
-          )
-          return
-        }
-        throw err
+      } else if (status === "ACTIVITY_STATUS_CONSENSUS_NEEDED") {
+        toast.message("Downgrade requested — awaiting Policy Manager approval.")
+      } else {
+        throw new Error(`Downgrade did not complete (${status}).`)
       }
     },
   }
@@ -230,7 +228,7 @@ export function AdminPanel() {
 
           <PendingApprovals onChange={refresh} />
 
-          <AwaitingCoSignature />
+          <AwaitingCoSignature key={awaitingKey} />
         </CardContent>
       </Card>
 
