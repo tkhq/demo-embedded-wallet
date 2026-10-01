@@ -10,6 +10,9 @@ import { z } from "zod"
 // two required env vars, plus optional API/proxy URL overrides.
 export const env = createEnv({
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  // Treat `FOO=` as unset, so blanking an optional var hides its feature
+  // instead of failing validation.
+  emptyStringAsUndefined: true,
   client: {
     // Your parent organization ID (Turnkey dashboard).
     NEXT_PUBLIC_ORGANIZATION_ID: z.string().min(1),
@@ -19,17 +22,12 @@ export const env = createEnv({
     // (https://api.turnkey.com and https://authproxy.turnkey.com).
     NEXT_PUBLIC_BASE_URL: z.string().min(1).optional(),
     NEXT_PUBLIC_AUTH_PROXY_URL: z.string().min(1).optional(),
-    // Optional: Facebook OAuth App ID. Configured in-code (unlike Google/Apple,
-    // which come from the Auth Proxy dashboard). The App ID is public — not a
-    // secret — and the SDK runs the PKCE flow + code exchange client-side. Leave
-    // unset to hide the Facebook button.
-    NEXT_PUBLIC_FACEBOOK_CLIENT_ID: z.string().min(1).optional(),
     // Optional: override the OAuth redirect URL. This is a SINGLE value shared
-    // by ALL providers (Google/Apple/Facebook…), not Facebook-specific. Leave
-    // unset in prod to inherit the Auth Proxy dashboard's redirect; set it in
-    // .env.local (e.g. http://localhost:3000/) so OAuth popups redirect back to
-    // your dev origin. Whatever value you use must be whitelisted in each
-    // enabled provider's console.
+    // by ALL providers (Google/Apple/Facebook…). Leave unset in prod to
+    // inherit the Auth Proxy dashboard's redirect; set it in .env.local (e.g.
+    // http://localhost:3000/) so OAuth popups redirect back to your dev origin.
+    // Whatever value you use must be whitelisted in each enabled provider's
+    // console.
     NEXT_PUBLIC_OAUTH_REDIRECT_URI: z.string().min(1).optional(),
     // Optional (demo only): the PUBLIC key of the "Policy Manager" P-256
     // API keypair, used by signup provisioning and the Settings → Admin
@@ -46,7 +44,6 @@ export const env = createEnv({
     NEXT_PUBLIC_AUTH_PROXY_ID: process.env.NEXT_PUBLIC_AUTH_PROXY_ID,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_AUTH_PROXY_URL: process.env.NEXT_PUBLIC_AUTH_PROXY_URL,
-    NEXT_PUBLIC_FACEBOOK_CLIENT_ID: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
     NEXT_PUBLIC_OAUTH_REDIRECT_URI: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_URI,
     NEXT_PUBLIC_POLICY_MANAGER_PUBLIC_KEY:
       process.env.NEXT_PUBLIC_POLICY_MANAGER_PUBLIC_KEY,
