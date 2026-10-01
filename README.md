@@ -1,8 +1,16 @@
 # Demo Embedded Wallet
 
-Turnkey-based embedded wallet demo built with Next.js and Ethereum Sepolia.
-This README is written for developers who want to understand the architecture
-and fork their own version quickly.
+Turnkey-based embedded wallet demo built with Next.js. It supports Ethereum,
+Base, and Solana, on mainnet or testnet. This README is written for developers
+who want to understand the architecture and fork their own version quickly.
+
+The app is **backendless**: authentication, wallet management, balances, and
+transactions all run client-side against Turnkey's [Embedded Wallet Kit
+(`@turnkey/react-wallet-kit`)](https://docs.turnkey.com/sdks/react) and the
+managed [Auth Proxy](https://docs.turnkey.com/features/authentication/auth-proxy).
+Sending is done with Turnkey's [transaction management](https://docs.turnkey.com/features/transaction-management)
+(gas-sponsored), and balances come from Turnkey's [Balances API](https://docs.turnkey.com/features/transaction-management/balances).
+There are no server actions, no third-party RPC/indexer, and no server API keys.
 
 ## Table of Contents
 
@@ -11,10 +19,11 @@ and fork their own version quickly.
 - [Architecture Overview](#architecture-overview)
 - [Key Flows (Sequence Diagrams)](#key-flows-sequence-diagrams)
 - [Feature Tour (What the App Does)](#feature-tour-what-the-app-does)
+- [Co-signing and Policies](#co-signing-and-policies)
+- [Config Panel](#config-panel)
 - [Turnkey Integration Details](#turnkey-integration-details)
-- [Turnkey Troubleshooting](#turnkey-troubleshooting)
-- [Email OTP Flows (Context)](#email-otp-flows-context)
-- [Target Network](#target-network)
+- [Troubleshooting](#troubleshooting)
+- [Networks](#networks)
 - [Project Structure](#project-structure)
 - [Scripts](#scripts)
 
@@ -26,14 +35,20 @@ and fork their own version quickly.
 pnpm install
 ```
 
-2. Create `.env.local`
+2. Enable the Auth Proxy in the Turnkey dashboard (**Embedded Wallets →
+   Configuration**), choose the auth methods you want (email OTP, passkey,
+   OAuth, external wallet), set OAuth client IDs + redirect URL there, and copy
+   your **Organization ID** and **Auth Proxy Config ID**. To use gas-sponsored
+   sends, also enable **Gas Sponsorship** for the org.
+
+3. Create `.env.local`
 
 ```bash
 cp .env.example .env.local
 ```
 
-3. Fill environment variables (see "Configuration" below).
-4. Run the app
+4. Fill the two required variables (see [Configuration](#configuration)).
+5. Run the app
 
 ```bash
 pnpm dev
@@ -41,58 +56,59 @@ pnpm dev
 
 ## Configuration
 
-All environment variables are validated at startup via `@t3-oss/env-nextjs`
-in `src/env.mjs`. Required variables live in `.env.example`. Set
-`SKIP_ENV_VALIDATION=1` to bypass validation for local builds without
-credentials (`pnpm build:local`).
+Environment variables are validated at startup via `@t3-oss/env-nextjs` in
+`src/env.mjs`. Empty values are treated as unset. Set `SKIP_ENV_VALIDATION=1`
+to bypass validation for local builds (`pnpm build:local`).
 
-### Turnkey (required)
+Because the app is backendless and the Auth Proxy serves auth configuration
+(enabled methods, OAuth client IDs, redirect URL, session length, OTP settings)
+from the dashboard, the app only needs two variables:
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_ORGANIZATION_ID` | Your Turnkey parent organization ID |
-| `NEXT_PUBLIC_BASE_URL` | Turnkey API base URL (default `https://api.turnkey.com`) |
-| `NEXT_PUBLIC_AUTH_PROXY_ID` | Auth Proxy config ID for OTP and passkey flows |
-| `NEXT_PUBLIC_APP_URL` | App URL used for OAuth redirect URIs (e.g. `http://localhost:3000`) |
-| `TURNKEY_API_PUBLIC_KEY` | Server-side Turnkey API public key |
-| `TURNKEY_API_PRIVATE_KEY` | Server-side Turnkey API private key |
+### Required
 
-### OAuth (required)
-
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID` | Google OAuth client ID |
-| `NEXT_PUBLIC_APPLE_OAUTH_CLIENT_ID` | Apple OAuth client ID |
-| `NEXT_PUBLIC_FACEBOOK_CLIENT_ID` | Facebook app ID |
-| `NEXT_PUBLIC_FACEBOOK_AUTH_VERSION` | Facebook SDK version (e.g. `11.0`) |
-| `NEXT_PUBLIC_FACEBOOK_GRAPH_API_VERSION` | Facebook Graph API version (e.g. `21.0`) |
-| `FACEBOOK_SECRET_SALT` | Random alphanumeric string for Facebook OIDC nonce |
-
-### Sepolia funding (warchest)
-
-| Variable | Description |
-|---|---|
-| `TURNKEY_WARCHEST_ORGANIZATION_ID` | Warchest org ID (separate from main org) |
-| `TURNKEY_WARCHEST_API_PUBLIC_KEY` | Warchest API public key |
-| `TURNKEY_WARCHEST_API_PRIVATE_KEY` | Warchest API private key |
-| `WARCHEST_PRIVATE_KEY_ID` | Private key ID used to sign funding transactions |
-
-### Web3 + pricing (required)
-
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_ALCHEMY_API_KEY` | Alchemy API key for Sepolia RPC, websockets, and asset transfers |
-| `COINGECKO_API_KEY` | CoinGecko demo API key for ETH/USD price |
+| Variable                      | Description                                                         |
+| ----------------------------- | ------------------------------------------------------------------- |
+| `NEXT_PUBLIC_ORGANIZATION_ID` | Your Turnkey parent organization ID                                 |
+| `NEXT_PUBLIC_AUTH_PROXY_ID`   | Auth Proxy config ID (dashboard → Embedded Wallets → Configuration) |
 
 ### Optional
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_AUTH_PROXY_URL` | Auth Proxy endpoint (wallet kit uses default if unset) |
-| `NEXT_PUBLIC_RP_ID` | WebAuthn relying party ID for passkeys (auto-detected from app URL in dev) |
-| `NEXT_PUBLIC_AUTH_IFRAME_URL` | Custom Turnkey auth iframe URL |
-| `NEXT_PUBLIC_EXPORT_IFRAME_URL` | Custom Turnkey export iframe URL |
-| `NEXT_PUBLIC_IMPORT_IFRAME_URL` | Custom Turnkey import iframe URL |
+| Variable                                | Description                                                                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_BASE_URL`                  | Turnkey API base URL (defaults to `https://api.turnkey.com`)                                                                  |
+| `NEXT_PUBLIC_AUTH_PROXY_URL`            | Auth Proxy endpoint (defaults to `https://authproxy.turnkey.com`)                                                             |
+| `NEXT_PUBLIC_OAUTH_REDIRECT_URI`        | Overrides the dashboard's OAuth redirect URL for every provider. Use it for local dev (e.g. `http://localhost:3000/`)         |
+| `NEXT_PUBLIC_POLICY_MANAGER_PUBLIC_KEY` | Public key of the Policy Manager API key, used for [co-signing](#co-signing-and-policies). Without it, co-signing setup fails |
+
+### Policy admin CLI only
+
+These are read only by `scripts/policy-admin.ts`. Never give them a
+`NEXT_PUBLIC_` prefix and don't add them to the web deployment.
+
+| Variable                             | Description                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `TURNKEY_POLICY_MANAGER_PRIVATE_KEY` | Private half of the Policy Manager key. A root user of every sub-org     |
+| `TURNKEY_SUBORG_ID`                  | Default sub-org the CLI operates on (override per run with `--org <id>`) |
+
+Everything else — which auth methods appear, OAuth client IDs, OAuth redirect
+URL, session expiration, OTP length/type, email branding — is configured on the
+Turnkey dashboard and fetched by the SDK via the Auth Proxy's
+`wallet_kit_config`. See [Config Panel](#config-panel) for overriding the
+presentation of these at runtime.
+
+### Dashboard setting: account lookups
+
+The passkey sign-in flow calls `proxyGetAccount` to check whether an account
+already exists for the entered email, so it can route to login vs. sign-up
+before the user authenticates. For that pre-login lookup to succeed, disable
+**Require token for account lookups** in the Auth Proxy configuration (dashboard
+→ Embedded Wallets → Configuration).
+
+With that setting off, account-existence lookups are unauthenticated (an email
+can be probed for whether it has an account). That is acceptable for a demo; a
+production app should leave the setting enabled and route login vs. sign-up with
+an authenticated lookup (e.g. server-side, or after an OTP verification token is
+obtained).
 
 ## Architecture Overview
 
@@ -100,37 +116,30 @@ credentials (`pnpm build:local`).
 flowchart LR
   subgraph Client["Next.js App (Client)"]
     UI["UI Components"]
-    AP["AuthProvider"]
+    CP["TurnkeyConfigProvider (mutable config)"]
     WP["WalletsProvider"]
-    TP["TransactionsProvider"]
-  end
-
-  subgraph Server["Next.js Server Actions"]
-    SA["turnkey.ts"]
-    WA["web3.ts"]
   end
 
   subgraph Turnkey["Turnkey Platform"]
     TKP["Auth Proxy"]
     TKS["Turnkey API"]
+    BAL["Balances API"]
+    TX["Transaction Mgmt (sponsored)"]
   end
 
-  subgraph Chain["Sepolia + Indexers"]
-    RPC["Alchemy RPC + WS"]
-    CG["CoinGecko"]
-  end
-
-  UI --> AP
+  UI --> CP
   UI --> WP
-  UI --> TP
-  AP --> TKP
-  AP --> SA
+  CP --> TKP
   WP --> TKS
-  TP --> RPC
-  SA --> TKS
-  WA --> CG
-  WA --> RPC
+  WP --> BAL
+  UI --> TX
+  TX --> TKS
 ```
+
+There is no application backend. Auth, signing, balances, and broadcasting all
+go directly from the client to Turnkey (the user's session stamps requests).
+The only other outbound call is Coinbase's public spot-price endpoint, used to
+put a USD value on testnet balances.
 
 ### Provider Hierarchy
 
@@ -138,32 +147,25 @@ Root layout (`src/providers/index.tsx`):
 
 ```
 ThemeProvider (next-themes, forced light)
-  └─ TurnkeyProvider (@turnkey/react-wallet-kit)
-      └─ AuthProvider (custom context — auth state + login/logout methods)
+  └─ TurnkeyConfigProvider (holds a mutable TurnkeyProviderConfig)
+      └─ TurnkeyProvider (@turnkey/react-wallet-kit) + Config Panel
 ```
 
 Dashboard layout (`src/app/(dashboard)/layout.tsx`) adds:
 
 ```
 AuthGuard
-  └─ WalletsProvider (wallet/account selection, creation, balance caching)
-      └─ NavMenu + page content
+  └─ WalletsProvider (wallets, HD account selection, network mode, balances)
+      └─ RwkRejectionGuard + ProvisionOnSignup + NavMenu + page content
 ```
 
-Dashboard page (`src/app/(dashboard)/dashboard/page.tsx`) adds:
+`WalletsProvider` uses the `useTurnkey()` hook to read wallets from the Turnkey
+session and fetches per-chain balances from Turnkey's Balances API. The
+`TurnkeyConfigProvider` owns the config passed to `TurnkeyProvider`; the
+[Config Panel](#config-panel) mutates that config at runtime.
 
-```
-TransactionsProvider (tx history + Alchemy websocket watcher)
-  └─ WalletCard, Assets, Activity
-```
-
-`TransactionsProvider` is scoped to the dashboard page, not the entire
-dashboard layout — the settings page does not need transaction state.
-
-`WalletsProvider` uses the `useTurnkey()` hook to read wallets from the
-Turnkey session and normalizes them into typed `Wallet[]` with checksummed
-addresses. `TransactionsProvider` subscribes to mined transactions via
-Alchemy's websocket API and merges them into state in real time.
+`AuthGuard` waits for the Turnkey client to finish restoring the stored session
+before deciding to redirect, so refreshing a dashboard page keeps you on it.
 
 ## Key Flows (Sequence Diagrams)
 
@@ -173,447 +175,373 @@ Alchemy's websocket API and merges them into state in real time.
 sequenceDiagram
   participant U as "User"
   participant UI as "Landing UI"
+  participant SDK as "Wallet Kit SDK"
   participant TKP as "Turnkey Auth Proxy"
   participant TK as "Turnkey API"
 
   U->>UI: Enter email + "Continue with email"
-  UI->>TKP: proxyInitOtp(contact=email)
+  UI->>SDK: initOtp(contact=email)
+  SDK->>TKP: otp_init
   TKP->>TK: initOtp
-  TK-->>U: OTP email sent
-  U->>UI: Enter OTP code
-  UI->>TKP: completeOtp(otpId, otpCode, createSubOrgParams)
-  TKP->>TK: verifyOtp + login/signup
+  TK-->>U: OTP email sent (SDK returns otpId + encryption bundle)
+  U->>UI: Enter OTP code on /verify-email
+  UI->>SDK: completeOtp(otpId, otpCode, bundle, createSubOrgParams)
+  SDK->>TKP: otp_verify + otp_login (or signup)
+  TKP->>TK: verify + login/signup
   TK-->>UI: Session + user
   UI-->>U: Redirect /dashboard
 ```
 
-### Auth: Passkey (Existing vs New)
+Note: `@turnkey/react-wallet-kit` v2 returns an `otpEncryptionTargetBundle` from
+`initOtp` that must be passed to `verifyOtp`/`completeOtp`. The app stashes it
+in `sessionStorage` (keyed by `otpId`) between the landing page and
+`/verify-email`.
+
+### Auth: Passkey
 
 ```mermaid
 sequenceDiagram
   participant U as "User"
   participant UI as "Landing UI"
-  participant TKP as "Turnkey Auth Proxy"
+  participant SDK as "Wallet Kit SDK"
   participant TK as "Turnkey API"
 
   U->>UI: Enter email + "Continue with passkey"
-  UI->>TKP: proxyGetAccount(filter=email)
+  UI->>SDK: proxyGetAccount(filter=email)
   alt Account exists
-    UI->>TK: loginWithPasskey (wallet kit)
+    UI->>SDK: loginWithPasskey()
+    SDK->>TK: Passkey login
     TK-->>UI: Session
-    UI-->>U: Redirect /dashboard
   else No account
-    UI->>TKP: proxyInitOtp(contact=email)
-    TKP->>TK: initOtp
-    TK-->>U: OTP email sent
+    UI->>SDK: initOtp(contact=email)
     U->>UI: Enter OTP code on /verify-email
-    UI->>TKP: proxyVerifyOtp(otpId, otpCode)
-    TKP-->>UI: verificationToken
-    UI->>TK: signUpWithPasskey(verificationToken, createSubOrgParams)
-    TK-->>UI: Session (sub-org + wallet created)
-    UI-->>U: Redirect /dashboard
+    UI->>SDK: verifyOtp(otpId, otpCode, bundle)
+    SDK-->>UI: verificationToken
+    UI->>SDK: createPasskey()
+    UI->>SDK: signUpWithOtp(verificationToken, passkey as authenticator)
+    SDK->>TK: Create sub-org + wallet + session
+    TK-->>UI: Session
   end
-```
-
-### Auth: OAuth — Google / Apple (Wallet Kit)
-
-Google and Apple are handled entirely by `@turnkey/react-wallet-kit`.
-The SDK manages the OIDC flow, sub-org creation, and session internally.
-
-```mermaid
-sequenceDiagram
-  participant U as "User"
-  participant UI as "Landing UI"
-  participant SDK as "Wallet Kit SDK"
-  participant O as "OAuth Provider"
-  participant TK as "Turnkey API"
-
-  U->>UI: Click Google / Apple button
-  UI->>SDK: handleGoogleOauth() / handleAppleOauth()
-  SDK->>O: OAuth authorize flow
-  O-->>SDK: OIDC token
-  SDK->>TK: Login or create sub-org + session
-  TK-->>SDK: Session + user
-  SDK-->>UI: user state updated
   UI-->>U: Redirect /dashboard
 ```
 
-### Auth: OAuth — Facebook (Custom Callback)
+Passkey sign-up goes through `signUpWithOtp` with the new passkey attached as
+the authenticator, so the request carries the verified email's OTP client
+signature.
 
-Facebook uses a PKCE flow with a custom callback page because the SDK's
-`handleFacebookOauth()` redirects the browser to Facebook, which returns
-to `/oauth-callback/facebook` with an authorization code.
+### Auth: OAuth & External Wallet
 
-```mermaid
-sequenceDiagram
-  participant U as "User"
-  participant UI as "Landing UI"
-  participant FB as "Facebook"
-  participant CB as "/oauth-callback/facebook"
-  participant SA as "Server Action"
-  participant TK as "Turnkey API"
+Google, Apple, Facebook, and external wallets are handled entirely by
+`@turnkey/react-wallet-kit` (`handleGoogleOauth()`, `handleAppleOauth()`,
+`handleFacebookOauth()`, `loginOrSignupWithWallet()`). OAuth runs as an in-page
+redirect (`openInPage: true`). The SDK manages the OIDC / wallet flow, sub-org
+creation, redirect completion, and session — no custom callback pages or server
+actions. OAuth client IDs and the redirect URL come from the Auth Proxy
+dashboard config.
 
-  U->>UI: Click Facebook button
-  UI->>FB: handleFacebookOauth() (PKCE redirect)
-  FB-->>CB: Authorization code + state
-  CB->>SA: exchangeToken(code, codeVerifier)
-  SA->>FB: Graph API token exchange
-  FB-->>SA: id_token (OIDC)
-  CB->>SA: loginWithOAuth(id_token)
-  SA->>TK: getSubOrgId / createUserSubOrg / oauthLogin
-  TK-->>SA: Session
-  SA-->>CB: Session
-  CB-->>U: Redirect /dashboard
-```
+Each authenticator identifies its own sub-org. Signing in with the same email
+through two different methods (e.g. Google and email OTP) creates two separate
+accounts.
 
-### Auth: External Wallet (MetaMask, etc.)
-
-The wallet flow is handled by the wallet kit's `loginOrSignupWithWallet()`.
-The user selects a provider from a dialog (Solana providers are filtered out).
+### Sending (sponsored)
 
 ```mermaid
 sequenceDiagram
   participant U as "User"
-  participant UI as "Landing UI"
+  participant UI as "Transfer Modal"
   participant SDK as "Wallet Kit SDK"
-  participant W as "Browser Wallet"
-  participant TK as "Turnkey API"
+  participant TK as "Turnkey (tx mgmt)"
 
-  U->>UI: Click "Continue with wallet"
-  UI->>UI: Show wallet provider dialog
-  U->>UI: Select provider (e.g. MetaMask)
-  UI->>SDK: loginOrSignupWithWallet(provider, createSubOrgParams)
-  SDK->>W: Request public key / signature
-  W-->>SDK: Signed challenge
-  SDK->>TK: Login or create sub-org + session
-  TK-->>SDK: Session + user
-  SDK-->>UI: user state updated
-  UI-->>U: Redirect /dashboard
+  U->>UI: Enter recipient + amount, Send
+  UI->>SDK: handleSendTransaction({ caip2, ..., sponsor: true })
+  SDK->>TK: Construct + sign (in enclave) + broadcast
+  TK-->>SDK: Poll to inclusion → tx hash
+  SDK-->>U: Turnkey modal shows progress → success + explorer link
 ```
 
-### Signing & Sending ETH
+Turnkey fills nonce/gas, signs in-enclave, broadcasts, and polls to inclusion.
+With `sponsor: true`, the user pays no gas. ERC-20 transfers send calldata built
+in `src/lib/evm.ts`; Solana transfers are built in `src/lib/solana.ts` without an
+RPC (Turnkey fills the blockhash and fees at broadcast).
 
-```mermaid
-sequenceDiagram
-  participant U as "User"
-  participant UI as "Transfer Dialog"
-  participant TK as "Turnkey API"
-  participant RPC as "Alchemy RPC"
+If a send isn't allowed by the sub-org's policies at 2/2, it escalates to the
+Policy Manager for co-signature instead of being rejected (see
+[Co-signing and Policies](#co-signing-and-policies)).
 
-  U->>UI: Enter recipient + amount
-  UI->>RPC: prepareTransactionRequest
-  RPC-->>UI: Gas + nonce populated
-  UI->>TK: signTransaction(unsignedTx)
-  TK-->>UI: Signed transaction
-  UI->>RPC: sendRawTransaction(signedTx)
-  RPC-->>UI: Tx hash
-  UI-->>U: Pending → confirmed toast
-```
+### Create Wallet + Account / Import / Export
 
-### Create Wallet + Account
-
-```mermaid
-sequenceDiagram
-  participant U as "User"
-  participant UI as "Wallets UI"
-  participant TK as "Turnkey API"
-
-  U->>UI: Create wallet
-  UI->>TK: createWallet(walletName, accounts)
-  TK-->>UI: walletId
-  UI->>TK: refreshWallets
-  TK-->>UI: wallets + accounts
-```
-
-### Import Wallet
-
-```mermaid
-sequenceDiagram
-  participant U as "User"
-  participant UI as "Wallet Card"
-  participant TK as "Turnkey API"
-
-  U->>UI: Import
-  UI->>TK: handleImport (wallet kit iframe)
-  TK-->>UI: Imported wallet/accounts
-  UI-->>U: Wallet list refreshed
-```
-
-### Export Wallet
-
-```mermaid
-sequenceDiagram
-  participant U as "User"
-  participant UI as "Wallet Card"
-  participant TK as "Turnkey API"
-
-  U->>UI: Export
-  UI->>TK: handleExport(walletId, exportType)
-  TK-->>UI: Export artifact
-  UI-->>U: Download flow completes
-```
+Handled by wallet kit hooks: `createWallet` / `createWalletAccounts`,
+`handleImportWallet`, `handleExportWallet` (each opens the appropriate modal /
+iframe flow).
 
 ## Feature Tour (What the App Does)
 
 ### Auth
 
-- **Passkey**: Account lookup via Auth Proxy (`proxyGetAccount`). Existing
-  users login directly with passkey; new users verify email via OTP first,
-  then sign up with passkey (sub-org + wallet created automatically).
-- **Email OTP (proxy)**: OTP initiation via Auth Proxy (`proxyInitOtp`).
-  User enters 6-digit code on `/verify-email`. `completeOtp()` verifies the
-  code and creates a sub-org + session in one call.
-- **Email OTP (magic link)**: Legacy flow via custom server actions. Kept as
-  reference in `auth-provider.tsx` and `/email-auth` route but not used by
-  the primary landing UI.
-- **OAuth**: Google and Apple handled entirely by `@turnkey/react-wallet-kit`
-  (`handleGoogleOauth()`, `handleAppleOauth()`) — the SDK manages the OIDC
-  flow, sub-org creation, and session internally. Facebook uses a custom PKCE
-  flow: `handleFacebookOauth()` redirects to Facebook, which returns to
-  `/oauth-callback/facebook` with an authorization code; a server action
-  (`exchangeToken`) exchanges it for an OIDC token via the Graph API, then
-  `loginWithOAuth()` in `auth-provider.tsx` completes the login.
-- **External wallet**: `loginOrSignupWithWallet()` from
-  `@turnkey/react-wallet-kit`. User picks a provider from a dialog (Solana
-  providers are filtered out). The SDK handles sub-org creation if needed.
+- **Passkey**: account lookup via Auth Proxy (`proxyGetAccount`). Existing users
+  log in directly; new users verify email via OTP, then sign up with a passkey
+  (sub-org + wallet created automatically).
+- **Email OTP**: `initOtp` → `/verify-email` → `completeOtp` (verify + login /
+  signup in one call).
+- **OAuth**: Google, Apple, Facebook via wallet kit `handle*Oauth()` — redirect
+  completion is automatic.
+- **External wallet**: `loginOrSignupWithWallet()` with a provider picker
+  (Solana providers filtered out).
 
 ### Wallets & Accounts
 
-- Wallets loaded from the Turnkey session and normalized (valid Ethereum
-  addresses only, checksummed via `getAddress`) in `src/providers/wallet-provider.tsx`.
-- Create new wallets (`createWallet`) or add accounts to existing wallets
-  (`createWalletAccounts`) — both via `@turnkey/react-wallet-kit` hooks.
-- Preferred wallet persisted to localStorage per user ID.
-- Multi-wallet and multi-account support with a dropdown selector.
-- Balance fetched via viem `getBalance` with an in-memory cache (deduplicates
-  concurrent requests for the same address).
+- New sub-orgs get a **Default Wallet** with one Ethereum (secp256k1) and one
+  Solana (ed25519) account. Wallets created before Solana support get their
+  Solana account backfilled on load.
+- The account selector on the wallet card switches between HD account indexes
+  ("Account N"); each index is one ETH + SOL address pair. Add accounts with
+  `createWalletAccounts`, or create more wallets from the account menu.
+- Import and export wallets from the wallet card (`handleImportWallet`,
+  `handleExportWallet`).
 
-### Faucet (Add Funds)
+### Network Mode
 
-- UI calls `fundWallet` in `src/lib/web3.ts`, which delegates to a server
-  action in `src/actions/turnkey.ts`.
-- Server action uses a separate Turnkey "warchest" organization to sign and
-  send 0.001 ETH to the target address.
-- Faucet is one-time only: accounts that have already received at least one
-  incoming transfer (checked via Alchemy `getAssetTransfers`, received
-  category only) are not eligible.
-- Toast notifications show pending/confirmed/error states with Etherscan links.
+- A global **Mainnet / Testnet** toggle on the dashboard switches balances,
+  send, and receive. Testnet is the default, so mainnet (real funds) is always
+  an explicit choice. See [Networks](#networks).
 
-### Sending Funds
+### Assets & Balances
 
-- Transfer dialog (`src/components/transfer-dialog.tsx`) with Send and Receive
-  tabs, responsive as a drawer on mobile.
-- Transaction prepared via viem `prepareTransactionRequest` with a
-  Turnkey-backed `WalletClient` (created by `@turnkey/viem`).
-- Gas estimation displayed before confirmation. User reviews recipient, amount,
-  and fees in `send-transaction.tsx` before submitting.
-- Pending transactions optimistically inserted into activity state via
-  `TransactionsProvider.addPendingTransaction`.
+- The assets table lists every asset on every chain for the selected account:
+  each chain's native asset (always shown, even at zero) plus any tokens the
+  Balances API returns (e.g. USDC).
+- Balances come from Turnkey's Balances API (`getWalletAddressBalances`). On
+  mainnet, USD values come from the API's `display` fields. On testnet, USD
+  values use mainnet spot prices from Coinbase's public endpoint (stablecoins
+  pinned to $1), in `src/lib/prices.ts`.
+- The wallet card shows the total USD value across all chains.
 
-### Receiving Funds
+### Sending & Receiving
 
-- Receive tab shows a QR code (via `react-qr-code`) and the checksummed
-  address with a copy-to-clipboard button.
-
-### Activity & Assets
-
-- Transaction history fetched via Alchemy `getAssetTransfers` (sent +
-  received, sorted by block number descending).
-- Real-time updates via Alchemy websocket subscription
-  (`AlchemySubscription.MINED_TRANSACTIONS`) for the selected account address.
-- Timeout protection (30s) prevents indefinite loading on slow fetches.
-- ETH price fetched from CoinGecko for USD display in assets table and wallet
-  card.
+- Each asset row has Send and Receive actions that open the transfer modal
+  (`src/components/transfer-modal.tsx`; a drawer on mobile) for that asset.
+- Send uses `handleSendTransaction` with `sponsor: true` for native ETH, ERC-20
+  tokens, native SOL, and USDC on Solana.
+- On testnet EVM chains, the modal reads the sub-org's live policies and shows
+  the allowlisted recipients as chips.
+- Receive shows a QR code (`react-qr-code`) and the address with
+  copy-to-clipboard.
 
 ### Session Management
 
-- 15-minute session expiry (`SESSION_EXPIRY = 900s`).
-- Warning modal shown 30 seconds before expiry
-  (`src/components/session-expiry-warning.tsx`).
-- Auto session refresh enabled in `TurnkeyProvider` config.
-- Logout clears the Turnkey session, IndexedDB keys, and Google auth state.
+- Auto session refresh (`auth.autoRefreshSession`). On full expiry the
+  `onSessionExpired` callback returns the user to the landing page.
 
-### Passkey Management
+### Settings
 
-- Settings page (`/settings`) lists all passkeys with creation date and
-  credential ID.
-- Users can add new passkeys or delete existing ones (deletion disabled when
-  only one passkey remains).
+- **Login methods**: the account's email and its passkeys (with creation date
+  and credential ID). Add or remove passkeys (removal disabled when only one
+  remains).
+- **Admin**: root quorum controls, pending approvals, and actions awaiting
+  co-signature. See [Co-signing and Policies](#co-signing-and-policies).
+
+## Co-signing and Policies
+
+The demo shows a 2-of-2 root quorum between the end user and a business-held
+**Policy Manager** API key, with policies that decide which actions the user can
+take alone.
+
+- **Provisioning on sign-up**: on the first authenticated load after sign-up,
+  `ProvisionOnSignup` (`src/components/provision-on-signup.tsx`) applies the
+  policy set and ABIs, adds the Policy Manager as a root user, then raises the
+  root quorum to 2/2. That order means the sub-org is never left unusable, and
+  every step is idempotent (`src/lib/root-quorum.ts`). Existing sub-orgs are
+  never migrated automatically; use Settings → Admin.
+- **Policies** (`src/config/policies.ts`):
+  - Testnet EVM: native and USDC sends only to each chain's allowlisted
+    recipients.
+  - Mainnet EVM: any action is allowed, so a user's real funds can't get stuck.
+  - Solana: native SOL and USDC-SPL transfers to any recipient.
+  - Wallet create / account add / import / export: the end user alone, scoped
+    to their user ID, so the Policy Manager can't export keys.
+
+  Anything else needs the Policy Manager's co-signature at 2/2.
+
+- **Settings → Admin** (`src/components/admin-panel.tsx`): shows the current
+  threshold, migrates an existing sub-org (apply policies, add the Policy
+  Manager, bump to 2/2), and switches between 1/2 and 2/2. Lowering to 1/2 at
+  2/2 needs the Policy Manager's approval. Every action is behind a warning
+  dialog. The panel also lists **pending approvals** (Policy Manager changes
+  waiting for the user's co-signature, which the user can approve or reject)
+  and the user's own actions **awaiting co-signature**.
+- **Policy admin CLI** (`scripts/policy-admin.ts`): the Policy Manager's side,
+  run locally by an operator. It signs headlessly with the Policy Manager
+  private key and is never imported by the app.
+
+```bash
+pnpm tsx scripts/policy-admin.ts list                      # quorum, policies, ABIs
+pnpm tsx scripts/policy-admin.ts apply [--org <id>] [--user <id>]  # upload ABIs + create policies
+pnpm tsx scripts/policy-admin.ts reset                     # delete the demo- policies
+pnpm tsx scripts/policy-admin.ts approve <all|admin|fp>    # co-sign pending activities
+pnpm tsx scripts/policy-admin.ts reject <all|fp>           # reject pending activities
+pnpm tsx scripts/policy-admin.ts bump <1|2>                # set the root-quorum threshold
+```
+
+The Policy Manager private key is a root user of every sub-org it's added to.
+Keep it in a secret store and only load it where the CLI runs.
+
+## Config Panel
+
+The app ships a runtime config panel modeled on the
+[`wallets.turnkey.com`](https://wallets.turnkey.com) reference demo.
+
+- Open it with the **Config Panel** toggle under the login card. It closes
+  automatically once you authenticate (it only affects login/signup).
+- The panel (`src/components/config-panel.tsx`) mutates the live
+  `TurnkeyProviderConfig` held by `TurnkeyConfigProvider`
+  (`src/providers/config/config-provider.tsx`): toggle which auth methods appear
+  on the login card (`ui.authModal.methods`). Each toggle starts from the method's
+  Auth Proxy (dashboard) setting. Changes apply immediately (the Turnkey client
+  re-initializes; sessions persist) and reset on reload.
+- These are presentation overrides on top of the Auth-Proxy-backed config — the
+  architecture is identical to production; only the config source differs.
 
 ## Turnkey Integration Details
 
 ### Provider config
 
-`src/config/turnkey.ts` defines the `TurnkeyProviderConfig` passed to
-`TurnkeyProvider` in `src/providers/index.tsx`. It includes:
-- Organization and Auth Proxy IDs
-- OAuth config (Google, Apple, Facebook client IDs + redirect URI)
-- Sub-org creation params per auth method (passkey, email OTP, OAuth), each
-  with a default Ethereum wallet (`m/44'/60'/0'/0/0`)
-- Auto session refresh enabled
+`src/config/turnkey.ts` defines the static `TurnkeyProviderConfig`:
 
-### Client SDK packages
+- Organization ID + Auth Proxy config ID (+ optional API/proxy URL overrides)
+- An optional OAuth redirect override (`NEXT_PUBLIC_OAUTH_REDIRECT_URI`)
+- `auth.autoRefreshSession` and `createSuborgParams` per method, each creating
+  the Default Wallet (Ethereum `m/44'/60'/0'/0/0` + Solana `m/44'/501'/0'/0'`)
+- A `ui` block with static UI defaults (dark mode, border radius), which the
+  Config Panel starts from
 
-| Package | Usage |
-|---|---|
-| `@turnkey/react-wallet-kit` | `TurnkeyProvider`, `useTurnkey()` for auth flows, wallet CRUD, signing, import/export |
-| `@turnkey/sdk-react` | `useTurnkey()` for `passkeyClient`, `indexedDbClient`, `walletClient` |
-| `@turnkey/sdk-browser` | `TurnkeyBrowserClient`, `AuthClient`, `SessionType` types |
-| `@turnkey/wallet-stamper` | `WalletType` enum for external wallet auth |
-| `@turnkey/crypto` | `uncompressRawPublicKey` for public key handling |
-| `@turnkey/http` | Type imports for `TurnkeyApiTypes` (used in `src/types/turnkey.ts`) |
+OAuth client IDs, the redirect URL, and enabled auth methods are intentionally
+**not** in code — they live in the dashboard and are served via the Auth Proxy.
 
-### Server SDK packages
+### SDK packages
 
-| Package | Usage |
-|---|---|
-| `@turnkey/sdk-server` | `TurnkeyServerClient`, `ApiKeyStamper`, `DEFAULT_ETHEREUM_ACCOUNTS` |
-| `@turnkey/viem` | `createAccount` to bridge Turnkey signing into a viem `Account` |
+| Package                                        | Usage                                                                                                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@turnkey/react-wallet-kit` (v2)               | `TurnkeyProvider`, `useTurnkey()` for auth, wallet CRUD, balances (`getWalletAddressBalances`), signing/sending (`handleSendTransaction`), import/export, policies |
+| `@turnkey/sdk-server`                          | Policy admin CLI (`scripts/policy-admin.ts`), signing with the Policy Manager API key; policy body types in `src/config/policies.ts`                               |
+| `@turnkey/http`                                | Type imports (`TurnkeyApiTypes`)                                                                                                                                   |
+| `viem`, `@solana/web3.js`, `@solana/spl-token` | Building ERC-20 calldata and unsigned Solana transfers, and address/unit helpers. No RPC calls                                                                     |
 
-### viem bridge
+## Troubleshooting
 
-`src/lib/web3.ts` exports `getTurnkeyWalletClient()` which:
-1. Creates a Turnkey-backed viem `Account` via `@turnkey/viem`'s `createAccount`
-2. Wraps it in a viem `WalletClient` targeting Sepolia over Alchemy RPC
-3. Used for both user transactions (browser client) and warchest funding
-   (server client)
+- **Auth Proxy misconfig** — OTP/OAuth fails or the login card shows no
+  methods. Ensure the Auth Proxy is enabled and the desired methods/OAuth client
+  IDs/redirect URL are configured in the dashboard, and that
+  `NEXT_PUBLIC_AUTH_PROXY_ID` matches. To see what the SDK receives:
 
-## Turnkey Troubleshooting
+  ```bash
+  curl -X POST https://authproxy.turnkey.com/v1/wallet_kit_config \
+    -H "X-Auth-Proxy-Config-ID: $NEXT_PUBLIC_AUTH_PROXY_ID"
+  ```
 
-- **Auth Proxy misconfig**
-  - Symptoms: OTP init/verify fails, OAuth returns generic errors.
-  - Check `NEXT_PUBLIC_AUTH_PROXY_ID` and `NEXT_PUBLIC_AUTH_PROXY_URL` in
-    `.env.local`, and ensure they match the proxy config used in
-    `src/config/turnkey.ts`.
-- **OAuth redirect mismatch**
-  - Symptoms: Google/Apple/Facebook login redirects with provider errors.
-  - Fix: Verify the OAuth provider's redirect URI matches your app URL and the
-    configured `NEXT_PUBLIC_APP_URL`.
-- **Passkey registration/login fails**
-  - Symptoms: NotAllowedError or "Invalid state" in passkey flows.
-  - Fix: Ensure `NEXT_PUBLIC_RP_ID` matches your deployment domain and that
-    you are using HTTPS in production. Localhost works without a custom RP ID.
-- **Server actions failing (Turnkey API keys)**
-  - Symptoms: 401/403 or "signature invalid" during sub-org creation or OTP.
-  - Fix: Validate `TURNKEY_API_PUBLIC_KEY`, `TURNKEY_API_PRIVATE_KEY`, and
-    `NEXT_PUBLIC_ORGANIZATION_ID` match the same org. See `src/actions/turnkey.ts`.
-- **Faucet (warchest) not funding**
-  - Symptoms: "unable to drip" or funding errors.
-  - Fix: Ensure the warchest org is funded and all warchest env vars are set:
-    `TURNKEY_WARCHEST_*` and `WARCHEST_PRIVATE_KEY_ID`. The faucet only works
-    once per account (before any transactions are received).
-- **Alchemy or price data errors**
-  - Symptoms: zero balances, failed tx fetches, missing USD price.
-  - Fix: Confirm `NEXT_PUBLIC_ALCHEMY_API_KEY` and `COINGECKO_API_KEY` are valid.
-- **Facebook login fails**
-  - Symptoms: Token exchange errors or missing `id_token`.
-  - Fix: Verify `NEXT_PUBLIC_FACEBOOK_CLIENT_ID`,
-    `NEXT_PUBLIC_FACEBOOK_GRAPH_API_VERSION`, `NEXT_PUBLIC_FACEBOOK_AUTH_VERSION`,
-    and `FACEBOOK_SECRET_SALT` are set. Ensure the Facebook app is configured
-    for OIDC with the correct redirect URI at `/oauth-callback/facebook`.
+- **An OAuth button shows but sign-in fails with "Client ID is not
+  configured"** — the provider is enabled in the Auth Proxy without a client ID.
+  Set the client ID in the dashboard, or disable the provider.
+- **OAuth redirect mismatch** — the redirect URL (dashboard, or
+  `NEXT_PUBLIC_OAUTH_REDIRECT_URI` locally) must be whitelisted in each
+  provider's console. Facebook expects the trailing `/`.
+- **Passkey registration/login fails** — ensure your deployment domain is used
+  as the RP ID (localhost works in dev) and HTTPS in production.
+- **Sponsored send fails / "gas sponsorship not enabled"** — enable Gas
+  Sponsorship for the org in the dashboard.
+- **A testnet send goes to "awaiting co-signature"** — at 2/2, testnet EVM sends
+  are only allowed to the chain's allowlisted recipients. Send to an allowlisted
+  address, or approve it with `policy-admin.ts approve`.
+- **Co-signing setup fails** — set `NEXT_PUBLIC_POLICY_MANAGER_PUBLIC_KEY`.
+- **Balances show 0** — the Balances API returns non-zero balances only for
+  supported assets on the queried chain; on testnets `display.usd` is 0 (the app
+  substitutes mainnet spot prices).
 
-## Email OTP Flows (Context)
+## Networks
 
-Two email OTP approaches exist, but only one is actively used by the UI.
-The proxy OTP flow is the current implementation; the magic link flow is kept
-as a reference and is not invoked by the landing auth UI.
+Chains are defined in `src/config/networks.ts`:
 
-- Proxy OTP flow (wallet kit)
-  - `src/components/auth.tsx`
-  - `src/app/(landing)/verify-email/page.tsx`
-- Magic link flow (custom server actions)
-  - `src/providers/auth-provider.tsx`
-  - `src/app/(landing)/email-auth/page.tsx`
+| Chain    | Mainnet                                   | Testnet                                          |
+| -------- | ----------------------------------------- | ------------------------------------------------ |
+| Ethereum | `eip155:1`                                | Sepolia `eip155:11155111`                        |
+| Base     | `eip155:8453`                             | Base Sepolia `eip155:84532`                      |
+| Solana   | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` | Devnet `solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1` |
 
-## Target Network
-
-This demo targets Ethereum Sepolia only.
-
-If you want to swap networks, update:
-- `src/lib/web3.ts`: `alchemyRpcUrl`, `Network.ETH_SEPOLIA`, `sepolia` chain
-- `src/actions/web3.ts`: `Network.ETH_SEPOLIA`
-- `src/config/turnkey.ts`: wallet account `addressFormat` and `curve` if non-EVM
-- UI copy that mentions Sepolia
+All EVM chains share one secp256k1 account, so adding another EVM chain is a new
+entry in `CHAINS`. Testnet recipient allowlists and USDC contracts per chain are
+in `src/config/policies.ts`.
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── layout.tsx                     # Root layout (metadata, Providers wrapper)
+│   ├── layout.tsx                     # Root layout (metadata, Providers, CSS import order)
 │   ├── (landing)/                     # Unauthenticated routes (InverseAuthGuard)
 │   │   ├── page.tsx                   # Landing page with Auth component
 │   │   ├── layout.tsx                 # Landing layout (features sidebar, toaster)
-│   │   ├── verify-email/             # Email OTP verification (proxy flow)
-│   │   ├── email-auth/               # Email magic link callback (legacy flow)
-│   │   └── oauth-callback/facebook/  # Facebook PKCE token exchange
+│   │   └── verify-email/              # OTP verification (email + passkey sign-up)
 │   └── (dashboard)/                   # Authenticated routes (AuthGuard)
-│       ├── layout.tsx                 # Dashboard layout (WalletsProvider, nav)
-│       ├── dashboard/page.tsx         # Wallet card, assets table, activity
-│       └── settings/page.tsx          # Passkey management
-├── actions/
-│   ├── turnkey.ts                     # Sub-org creation, OTP, OAuth, warchest faucet
-│   └── web3.ts                        # Balance, token balances, tx history, ETH price
+│       ├── layout.tsx                 # Dashboard layout (WalletsProvider, nav, provisioning)
+│       ├── dashboard/page.tsx         # Network toggle, wallet card, assets table
+│       └── settings/page.tsx          # Login methods, passkeys, Admin panel
 ├── components/
-│   ├── auth.tsx                       # Main auth form (email/passkey/wallet/OAuth tabs)
-│   ├── login.tsx                      # Simple login wrapper
-│   ├── google-auth.tsx                # Google OAuth button
-│   ├── apple-auth.tsx                 # Apple OAuth button
-│   ├── facebook-auth.tsx              # Facebook OAuth button
-│   ├── wallet-card.tsx                # Wallet display (balance, fund, transfer, import/export)
-│   ├── assets.tsx                     # ETH balance table with USD value
-│   ├── activity.tsx                   # Transaction history table
-│   ├── transfer-dialog.tsx            # Send/receive dialog (drawer on mobile)
-│   ├── send-transaction.tsx           # Transaction review and confirmation
-│   ├── recipient-address.tsx          # Address input with validation
-│   ├── value-input.tsx                # ETH amount input
-│   ├── passkeys.tsx                   # Passkey list with add/delete
-│   ├── add-passkey.tsx                # Add passkey button
-│   ├── passkey-item.tsx               # Individual passkey with delete
+│   ├── auth.tsx                       # Main auth form (email/passkey/wallet/OAuth)
+│   ├── google-auth.tsx / apple-auth.tsx / facebook-auth.tsx  # OAuth buttons
 │   ├── auth-guard.tsx                 # Route protection (AuthGuard + InverseAuthGuard)
-│   ├── nav-menu.tsx                   # Top navigation bar
-│   ├── account.tsx                    # User account dropdown
-│   ├── session-expiry-warning.tsx     # Session expiry warning modal
-│   ├── view-transaction.button.tsx    # Etherscan link button
-│   ├── mode-toggle.tsx                # Theme toggle
-│   ├── features.tsx                   # Landing page feature list
-│   ├── icons.tsx                      # SVG icon components
-│   └── ui/                            # shadcn/ui primitives (button, card, dialog, etc.)
+│   ├── config-panel.tsx               # Config Panel (runtime auth-method overrides)
+│   ├── network-toggle.tsx             # Mainnet / Testnet switch
+│   ├── wallet-card.tsx                # Total balance, account selector, import/export
+│   ├── account-selector.tsx           # HD account index picker + add account
+│   ├── assets.tsx                     # Multi-chain asset table with send/receive actions
+│   ├── transfer-modal.tsx             # Send/receive for one asset (sponsored send)
+│   ├── recipient-address.tsx / value-input.tsx  # Transfer form fields
+│   ├── passkeys.tsx / add-passkey.tsx / passkey-item.tsx     # Passkey management
+│   ├── admin-panel.tsx                # Root quorum controls (Settings → Admin)
+│   ├── pending-approvals.tsx          # Policy Manager changes awaiting the user
+│   ├── awaiting-cosignature.tsx       # User actions awaiting the Policy Manager
+│   ├── provision-on-signup.tsx        # Policies + Policy Manager + 2/2 for new sub-orgs
+│   ├── rwk-rejection-guard.tsx        # Suppresses known-benign SDK promise rejections
+│   ├── nav-menu.tsx / account.tsx     # Navigation + account dropdown
+│   ├── features.tsx / feature.tsx / legal.tsx / icons.tsx / or-separator.tsx
+│   └── ui/                            # shadcn/ui primitives
 ├── config/
-│   ├── turnkey.ts                     # TurnkeyProvider config (OAuth, sub-org params)
+│   ├── turnkey.ts                     # TurnkeyProviderConfig (static defaults, Default Wallet)
+│   ├── networks.ts                    # Chains, CAIP-2 IDs, network mode
+│   ├── policies.ts                    # Policy + ABI definitions
 │   └── site.ts                        # Site metadata and base URL detection
 ├── providers/
-│   ├── index.tsx                      # Root provider hierarchy (Theme > Turnkey > Auth)
+│   ├── index.tsx                      # Root provider hierarchy (Theme > TurnkeyConfig)
 │   ├── theme-provider.tsx             # next-themes wrapper
-│   ├── auth-provider.tsx              # Auth state, login/logout methods, session expiry
-│   ├── wallet-provider.tsx            # Wallet/account CRUD, selection, balance cache
-│   └── transactions-provider.tsx      # Tx history, websocket watcher, pending tx
-├── hooks/
-│   └── use-token-price.tsx            # ETH/USD price hook via CoinGecko
+│   ├── config/config-provider.tsx     # Mutable config + owns TurnkeyProvider + Config Panel
+│   └── wallet-provider.tsx            # Wallets, accounts, network mode, balances
 ├── lib/
-│   ├── web3.ts                        # Viem clients, Alchemy SDK, tx watching, faucet
-│   ├── utils.ts                       # cn(), truncateAddress(), getRpId()
-│   ├── constants.ts                   # Iframe IDs, curve types, localStorage keys
-│   ├── storage.ts                     # localStorage helpers for OTP ID and sessions
-│   ├── toast.tsx                      # Transaction toast notifications
-│   └── facebook-utils.ts             # Facebook PKCE login helpers
+│   ├── root-quorum.ts                 # Quorum, Policy Manager, provisioning, approvals
+│   ├── evm.ts                         # ERC-20 transfer calldata
+│   ├── solana.ts                      # Unsigned SOL / SPL transfers (no RPC)
+│   ├── prices.ts                      # Spot prices for testnet USD values
+│   ├── utils.ts                       # cn(), truncateAddress(), error helpers, getRpId()
+│   └── constants.ts                   # Curve types, localStorage keys
 ├── types/
-│   ├── turnkey.ts                     # Account, Wallet, UserSession, Authenticator types
-│   ├── web3.ts                        # Transaction, AlchemyMinedTransaction types
+│   ├── turnkey.ts                     # Account, Wallet, AssetBalance, ... types
 │   └── index.d.ts                     # Global type declarations
 ├── styles/
 │   └── globals.css                    # Tailwind CSS base styles
 └── env.mjs                            # Type-safe env var validation (t3-env)
+scripts/
+└── policy-admin.ts                    # Policy Manager operator CLI
+stubs/
+└── empty-module.js                    # Turbopack alias target for RWK's React Native deps
 ```
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start Next.js development server |
-| `pnpm build` | Production build (validates env vars) |
-| `pnpm build:local` | Production build with `SKIP_ENV_VALIDATION=1` |
-| `pnpm start` | Start production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm format` | Format code with Prettier |
-| `pnpm format:check` | Check formatting without writing |
+| Command                              | Description                                                   |
+| ------------------------------------ | ------------------------------------------------------------- |
+| `pnpm dev`                           | Start Next.js development server                              |
+| `pnpm build`                         | Production build (validates env vars)                         |
+| `pnpm build:local`                   | Production build with `SKIP_ENV_VALIDATION=1`                 |
+| `pnpm start`                         | Start production server                                       |
+| `pnpm lint`                          | Run ESLint                                                    |
+| `pnpm format`                        | Format code with Prettier                                     |
+| `pnpm format:check`                  | Check formatting without writing                              |
+| `pnpm tsx scripts/policy-admin.ts …` | Policy admin CLI (see [Co-signing](#co-signing-and-policies)) |

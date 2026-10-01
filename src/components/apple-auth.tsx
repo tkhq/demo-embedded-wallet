@@ -1,27 +1,26 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { SiApple } from "@icons-pack/react-simple-icons"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { toast } from "sonner"
 
+import { isUserCancelError } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const AppleAuth = () => {
   const { handleAppleOauth, clientState } = useTurnkey()
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    setReady(!!clientState)
-  }, [clientState])
+  const ready = !!clientState
 
   const onClick = async () => {
     try {
-      await handleAppleOauth({ openInPage: false })
+      // Use the in-page (full-page redirect) OAuth flow instead of a popup.
+      await handleAppleOauth({ openInPage: true })
       // Rely on user state change to redirect elsewhere in the app
-    } catch (error: any) {
-      const message: string = error?.message || "Apple login failed"
+    } catch (error) {
+      if (isUserCancelError(error)) return
+      const message =
+        error instanceof Error ? error.message : "Apple login failed"
       toast.error(message)
     }
   }

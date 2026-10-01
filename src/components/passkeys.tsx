@@ -15,17 +15,20 @@ export function Passkeys() {
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
-    if (user) {
-      setLoading(true)
-      httpClient
-        ?.getAuthenticators({
-          userId: user.userId,
-          organizationId: session?.organizationId ?? "",
-        })
-        .then(({ authenticators }) => {
-          setAuthenticators(authenticators)
-          setLoading(false)
-        })
+    if (!user) return
+    let active = true
+    httpClient
+      ?.getAuthenticators({
+        userId: user.userId,
+        organizationId: session?.organizationId ?? "",
+      })
+      .then(({ authenticators }) => {
+        if (!active) return
+        setAuthenticators(authenticators)
+        setLoading(false)
+      })
+    return () => {
+      active = false
     }
   }, [user, session, httpClient])
 
@@ -51,7 +54,14 @@ export function Passkeys() {
         organizationId: session?.organizationId ?? "",
       })) || {}
     if (authenticator) {
-      setAuthenticators((prev) => [...prev, authenticator as Authenticator])
+      // The SDK refreshes `user` after adding a passkey, which re-triggers the
+      // effect above to refetch the full list. Guard against appending a
+      // passkey that refetch already brought in, or it shows up twice.
+      setAuthenticators((prev) =>
+        prev.some((a) => a.authenticatorId === authenticatorId)
+          ? prev
+          : [...prev, authenticator as Authenticator]
+      )
     }
   }
 

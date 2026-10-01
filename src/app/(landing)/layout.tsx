@@ -3,7 +3,6 @@ import { Toaster } from "sonner"
 
 import { InverseAuthGuard } from "@/components/auth-guard"
 import Features from "@/components/features"
-import { ModeToggle } from "@/components/mode-toggle"
 
 import gradient from "../../../public/purple-gradient.png"
 
@@ -21,6 +20,7 @@ export default function LandingLayout({ children }: LandingLayoutProps) {
               className="absolute -z-10 h-full w-full object-cover dark:opacity-65"
               src={gradient}
               alt="gradient"
+              priority
             />
             <Features />
           </div>

@@ -50,15 +50,22 @@ const sheetVariants = cva(
 )
 
 interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+  extends
+    React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
+    VariantProps<typeof sheetVariants> {
+  /**
+   * Render the dimming backdrop. Defaults to true. Set false for a non-modal
+   * sheet that should leave the rest of the page fully visible and interactive.
+   */
+  showOverlay?: boolean
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
+>(({ side = "right", className, children, showOverlay = true, ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
+    {showOverlay && <SheetOverlay />}
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}

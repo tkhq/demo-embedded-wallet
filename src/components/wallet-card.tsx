@@ -1,15 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
+import { CHAIN_LIST, sumUsd } from "@/config/networks"
 import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
-import { CopyIcon, Download, HandCoins, Upload } from "lucide-react"
+import { Download, Upload } from "lucide-react"
 import { toast } from "sonner"
-import { formatEther } from "viem"
 
-import { truncateAddress } from "@/lib/utils"
-import { fundWallet } from "@/lib/web3"
-import { useTokenPrice } from "@/hooks/use-token-price"
+import { isUserCancelError } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -19,34 +17,43 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-import TransferDialog from "./transfer-dialog"
+import AccountSelector from "./account-selector"
 import { Skeleton } from "./ui/skeleton"
 
 export default function WalletCard() {
-  const { ethPrice } = useTokenPrice()
-  const { state } = useWallets()
+  const { state, getBalances } = useWallets()
   const { handleImportWallet, handleExportWallet } = useTurnkey()
-  const { selectedWallet, selectedAccount } = state
-  const [usdAmount, setUsdAmount] = useState<number | undefined>(undefined)
+  const { selectedWallet } = state
 
-  const handleFundWallet = async () => {
-    if (!selectedAccount?.address) return
-    await fundWallet(selectedAccount?.address)
-  }
+  // Aggregate USD across every asset on every chain of the selected wallet.
+  const usdAmount = useMemo(() => {
+    if (!selectedWallet) return undefined
+    return CHAIN_LIST.reduce(
+      (total, chain) => total + sumUsd(getBalances(chain.key)),
+      0
+    )
+  }, [selectedWallet, getBalances])
 
-  const handleCopyAddress = () => {
-    if (selectedAccount?.address) {
-      navigator.clipboard.writeText(selectedAccount.address)
-      toast.success("Address copied to clipboard")
+  // The SDK modals reject when the user closes/cancels them; wrap the calls so
+  // that rejection is handled (a bare fire-and-forget leaves it unhandled and
+  // logs to the console). USER_CANCELED is expected — swallow it.
+  const onExport = async () => {
+    try {
+      await handleExportWallet({ walletId: selectedWallet?.walletId ?? "" })
+    } catch (error) {
+      if (isUserCancelError(error)) return
+      toast.error(error instanceof Error ? error.message : "Export failed")
     }
   }
 
-  useEffect(() => {
-    if (ethPrice && selectedAccount?.balance !== undefined) {
-      const balanceInEther = formatEther(selectedAccount?.balance)
-      setUsdAmount(Number(balanceInEther) * ethPrice)
+  const onImport = async () => {
+    try {
+      await handleImportWallet()
+    } catch (error) {
+      if (isUserCancelError(error)) return
+      toast.error(error instanceof Error ? error.message : "Import failed")
     }
-  }, [ethPrice, selectedAccount?.balance])
+  }
 
   return (
     <Card className="w-full">
@@ -58,86 +65,34 @@ export default function WalletCard() {
         </CardTitle>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <Button onClick={handleFundWallet} className="h-min cursor-pointer">
-            <HandCoins className="mr-2 h-4 w-4" />
-            Add funds
-          </Button>
-          <TransferDialog />
+          <AccountSelector />
 
-          <Button variant="outline" onClick={() => handleImportWallet()}>
+          <Button variant="outline" onClick={onImport}>
             <Download className="mr-2 h-4 w-4" />
             Import
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={() =>
-              handleExportWallet({
-                walletId: selectedWallet?.walletId ?? "",
-              })
-            }
-          >
+          <Button variant="outline" onClick={onExport}>
             <Upload className="mr-2 h-4 w-4" /> Export
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-1">
-        <div className="text-sm">
-          {selectedAccount?.address ? (
-            <div
-              onClick={handleCopyAddress}
-              className="flex w-min cursor-pointer items-center gap-2"
-            >
-              {truncateAddress(selectedAccount?.address)}
-              <CopyIcon className="h-3 w-3" />
-            </div>
-          ) : selectedWallet?.walletName ? (
-            <span className="text-muted-foreground">
-              No accounts. Please create one via nav bar panel.
-            </span>
-          ) : (
-            <Skeleton className="bg-muted-foreground/50 h-3 w-32 rounded-sm" />
-          )}
-        </div>
         <div className="text-4xl font-bold">
           ${usdAmount?.toFixed(2) || "0.00"}
           <span className="text-muted-foreground ml-1 text-sm">USD</span>
         </div>
-        <div className="text-muted-foreground text-sm">
-          {selectedAccount?.balance
-            ? parseFloat(
-                Number(formatEther(selectedAccount?.balance)).toFixed(8)
-              ).toString()
-            : "0"}{" "}
-          ETH
-        </div>
       </CardContent>
       <CardFooter className="sm:hidden">
         <div className="mx-auto flex w-full flex-col items-center gap-2">
-          <Button className="w-full">
-            <HandCoins className="mr-2 h-4 w-4" />
-            Add funds
-          </Button>
-          <TransferDialog />
+          <AccountSelector className="w-full" />
           <div className="flex w-full items-center gap-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleImportWallet()}
-            >
+            <Button variant="outline" className="w-full" onClick={onImport}>
               <Download className="mr-2 h-4 w-4" />
               Import
             </Button>
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() =>
-                handleExportWallet({
-                  walletId: selectedWallet?.walletId ?? "",
-                })
-              }
-            >
+            <Button variant="outline" className="w-full" onClick={onExport}>
               <Upload className="mr-2 h-4 w-4" />
               Export
             </Button>
