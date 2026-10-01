@@ -8,7 +8,7 @@ import {
   EvmCaip2,
   isEvmChain,
   networkLabel,
-  SolanaCaip2,
+  solanaSendCaip2For,
 } from "@/config/networks"
 import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
@@ -261,7 +261,7 @@ function TransferBody({
           })
         }
       } else {
-        const caip2 = caip2For(asset.chain, networkMode) as SolanaCaip2
+        const caip2 = solanaSendCaip2For(networkMode)
         const unsignedTransaction = asset.isNative
           ? buildUnsignedSolTransfer(asset.fromAddress, recipient, Number(atomic))
           : buildUnsignedSplTransfer(

@@ -154,6 +154,23 @@ export const caip2For = <K extends ChainKey>(
 ): Caip2ForChain<K> =>
   CHAINS[chainKey].caip2[mode] as Caip2ForChain<K>
 
+// CAIP-2 for Solana sends. The same chains as `caip2For("solana", mode)`, but
+// devnet uses the full genesis hash: the Wallet Kit's send modal picks its
+// explorer link by exact CAIP-2 match and only recognizes devnet in that form
+// (otherwise it links to the mainnet explorer). The Balances API accepts only
+// the 32-character form, so this is used for sends alone.
+export type SolanaSendCaip2 =
+  | SolanaCaip2
+  | "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG"
+
+const SOLANA_SEND_CAIP2: Record<NetworkMode, SolanaSendCaip2> = {
+  mainnet: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+  testnet: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+}
+
+export const solanaSendCaip2For = (mode: NetworkMode): SolanaSendCaip2 =>
+  SOLANA_SEND_CAIP2[mode]
+
 // True when an asset balance is the chain's native asset (ETH / SOL), matched
 // by CAIP-19 slip44 suffix with a symbol fallback.
 export const isNativeAsset = (
