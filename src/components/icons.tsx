@@ -170,6 +170,81 @@ const icons = {
       />
     </svg>
   ),
+  solana: (props: IconProps) => (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <circle cx="16" cy="16" r="16" fill="#000000" />
+      <path
+        d="M9.9 20.02a.62.62 0 0 1 .44-.18h13.2c.28 0 .41.33.22.52l-2.6 2.6a.62.62 0 0 1-.44.19H7.52a.31.31 0 0 1-.22-.53l2.6-2.6Z"
+        fill="url(#sol_a)"
+      />
+      <path
+        d="M9.9 9.35a.64.64 0 0 1 .44-.18h13.2c.28 0 .41.33.22.52l-2.6 2.6a.62.62 0 0 1-.44.19H7.52a.31.31 0 0 1-.22-.53l2.6-2.6Z"
+        fill="url(#sol_b)"
+      />
+      <path
+        d="M21.16 14.65a.62.62 0 0 0-.44-.18H7.52a.31.31 0 0 0-.22.53l2.6 2.6c.11.11.27.18.44.18h13.2a.31.31 0 0 0 .22-.53l-2.6-2.6Z"
+        fill="url(#sol_c)"
+      />
+      <defs>
+        <linearGradient
+          id="sol_a"
+          x1="8.5"
+          y1="24"
+          x2="23"
+          y2="8.5"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#9945FF" />
+          <stop offset="1" stopColor="#14F195" />
+        </linearGradient>
+        <linearGradient
+          id="sol_b"
+          x1="8.5"
+          y1="24"
+          x2="23"
+          y2="8.5"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#9945FF" />
+          <stop offset="1" stopColor="#14F195" />
+        </linearGradient>
+        <linearGradient
+          id="sol_c"
+          x1="8.5"
+          y1="24"
+          x2="23"
+          y2="8.5"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#9945FF" />
+          <stop offset="1" stopColor="#14F195" />
+        </linearGradient>
+      </defs>
+    </svg>
+  ),
+  base: (props: IconProps) => (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <circle cx="16" cy="16" r="16" fill="#0052FF" />
+      <path
+        d="M15.94 27C22.05 27 27 22.075 27 16S22.05 5 15.94 5C10.142 5 5.386 9.443 4.94 15.09h14.564v1.82H4.94C5.386 22.557 10.142 27 15.94 27Z"
+        fill="#fff"
+      />
+    </svg>
+  ),
 }
 
 export const Icons: IconsType = icons

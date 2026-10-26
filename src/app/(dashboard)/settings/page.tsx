@@ -1,38 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import { ArrowLeft, Mail } from "lucide-react"
-import { useLocalStorage } from "usehooks-ts"
 
-import { PreferredWallet, Wallet } from "@/types/turnkey"
-import { PREFERRED_WALLET_KEY } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminPanel } from "@/components/admin-panel"
 import { Passkeys } from "@/components/passkeys"
 
 export default function Settings() {
   const router = useRouter()
   const { user } = useTurnkey()
-  const [preferredWalletSetting, setPreferredWalletSetting] =
-    useLocalStorage<PreferredWallet>(PREFERRED_WALLET_KEY, {
-      userId: "",
-      walletId: "",
-    })
-  const { state } = useWallets()
-  const [preferredWallet, setPreferredWallet] = useState<Wallet | undefined>()
-  useEffect(() => {
-    if (state.wallets.length > 0) {
-      const wallet = state.wallets.find(
-        (wallet) => wallet.walletId === preferredWalletSetting.walletId
-      )
-      if (wallet) {
-        setPreferredWallet(wallet)
-      }
-    }
-  }, [state.wallets, preferredWalletSetting])
 
   return (
     <main className="flex items-center justify-center px-8 py-4 lg:px-36 lg:py-12">
@@ -70,6 +49,7 @@ export default function Settings() {
             <Passkeys />
           </CardContent>
         </Card>
+        <AdminPanel />
       </div>
     </main>
   )

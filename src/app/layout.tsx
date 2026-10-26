@@ -1,5 +1,9 @@
-import "@/styles/globals.css"
+// Import the Wallet Kit stylesheet first so our own Tailwind build (globals.css)
+// wins the cascade. Both are full Tailwind v4 builds that share @layer names, so
+// whichever is imported last takes precedence — importing ours last keeps our
+// responsive utilities (e.g. `lg:block`) intact.
 import "@turnkey/react-wallet-kit/styles.css"
+import "@/styles/globals.css"
 
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"

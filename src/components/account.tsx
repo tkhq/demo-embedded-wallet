@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/providers/auth-provider"
+import { byWalletCreation } from "@/config/networks"
 import { useWallets } from "@/providers/wallet-provider"
 import { useTurnkey } from "@turnkey/react-wallet-kit"
 import {
@@ -13,9 +13,7 @@ import {
   SettingsIcon,
 } from "lucide-react"
 import Jazzicon, { jsNumberForAddress } from "react-jazzicon"
-import { formatEther } from "viem"
 
-import { truncateAddress } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+import NetworkToggle from "./network-toggle"
 import { Skeleton } from "./ui/skeleton"
 
 function AccountAvatar({ address }: { address: string | undefined }) {
@@ -53,10 +52,15 @@ function AccountAvatar({ address }: { address: string | undefined }) {
 export default function Account() {
   const router = useRouter()
 
-  const { state, newWallet, newWalletAccount, selectWallet, selectAccount } =
-    useWallets()
-  const { wallets, selectedWallet, selectedAccount } = state
-  const { logout, user, authState } = useTurnkey()
+  const { state, newWallet, selectWallet, selectedAccount } = useWallets()
+  const { wallets, selectedWallet } = state
+  const { logout, user } = useTurnkey()
+
+  // Oldest wallet first (the Default Wallet created at sign-up leads the list).
+  const sortedWallets = useMemo(
+    () => [...wallets].sort(byWalletCreation),
+    [wallets]
+  )
 
   const [isOpen, setIsOpen] = useState(false)
   const [isNewWalletMode, setIsNewWalletMode] = useState(false)
@@ -66,13 +70,6 @@ export default function Account() {
     e.preventDefault()
     e.stopPropagation()
     setIsNewWalletMode(true)
-  }
-
-  const handleNewAccount = (e: Event) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    newWalletAccount()
   }
 
   const handleCreateWallet = useCallback(
@@ -106,17 +103,9 @@ export default function Account() {
                 <div className="text-sm font-semibold">
                   {selectedWallet?.walletName}
                 </div>
-                <div className="text-muted-foreground text-xs font-semibold">
-                  {selectedAccount?.address
-                    ? truncateAddress(selectedAccount?.address)
-                    : "No accounts. Please create one via nav bar panel."}
-                </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-1">
-                <Skeleton className="h-3 w-12 rounded-[3px]" />
-                <Skeleton className="h-3 w-[120px] rounded-[3px]" />
-              </div>
+              <Skeleton className="h-3 w-24 rounded-[3px]" />
             )}
           </div>
           {isOpen ? (
@@ -144,7 +133,7 @@ export default function Account() {
         <DropdownMenuLabel className="">
           <span>Wallets</span>
         </DropdownMenuLabel>
-        {wallets.map((wallet) => (
+        {sortedWallets.map((wallet) => (
           <DropdownMenuCheckboxItem
             key={wallet.walletId}
             checked={selectedWallet?.walletId === wallet.walletId}
@@ -184,39 +173,17 @@ export default function Account() {
         )}
 
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <span>Accounts</span>
+        <DropdownMenuLabel>
+          <span>Network</span>
         </DropdownMenuLabel>
-
-        {selectedWallet?.accounts.map((account) => (
-          <DropdownMenuCheckboxItem
-            key={account.address}
-            checked={selectedAccount?.address === account.address}
-            onCheckedChange={() => selectAccount(account)}
-            className="flex items-center justify-between py-2"
-          >
-            <span>
-              {account.address ? truncateAddress(account.address) : ""}
-            </span>
-
-            <div className="bg-muted-foreground/10 flex items-center gap-1 rounded-full px-2 py-0.5">
-              <span className="text-sm font-semibold">
-                <span className="text-muted-foreground font-semibold">~</span>
-                {account.balance
-                  ? Number(formatEther(account.balance)).toFixed(2)
-                  : "0"}
-                <span className="text-muted-foreground ml-0.5 text-xs font-normal">
-                  ETH
-                </span>
-              </span>
-            </div>
-          </DropdownMenuCheckboxItem>
-        ))}
-
-        <DropdownMenuItem onSelect={handleNewAccount}>
-          <PlusCircleIcon className="mr-2 h-4 w-4" />
-          <span>New Account</span>
-        </DropdownMenuItem>
+        {/* Plain container (not a menu item) so selecting a mode toggles the
+            network without closing the menu. */}
+        <div
+          className="px-2 py-1.5"
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <NetworkToggle />
+        </div>
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/settings")}>
